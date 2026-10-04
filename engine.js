@@ -4,9 +4,9 @@ const GEAR_BASE = [10, 100, 1e4, 1e6, 1e9, 1e13, 1e18, 1e24];
 const GEAR_STEP = [1e3, 1e4, 1e5, 1e6, 1e8, 1e10, 1e12, 1e15];
 // Pacing knobs (tools/sim.js tunes these against the target timeline).
 // Target (active play): first wind ~5-7 min, first clock ~1 h, Clocktower ~1.5 h,
-// first strike ~5 h, city synchronised ~13 h, orrery complete ~23 h; the whole game (five drawings)
+// first strike ~5 h, city synchronised ~13 h, orrery complete ~22 h, the Great Clock running ~34 h; the whole game (five drawings)
 // is meant to run 30-40 h.
-const TUNE = { speed: 0.3, tension: 1, clockGrowth: 5, towerSpeed: 0.15, strikeAt: 1e9, windAt: 1e6, citySpeed: 0.03, cityGoal: 1e30, driftTime: 90, orrerySpeed: 0.001, orreryGoal: 1e40 };
+const TUNE = { speed: 0.3, tension: 1, clockGrowth: 5, towerSpeed: 0.15, strikeAt: 1e9, windAt: 1e6, citySpeed: 0.03, cityGoal: 1e30, driftTime: 90, orrerySpeed: 0.001, orreryGoal: 1e40, greatSpeed: 0.0007, greatGoal: 1e22 };
 
 const CHIME_AT = 1e60;   // ticks needed to finish the first clock; each later clock is larger
 const TOWER_AT = 5;      // finished clocks before the master's first case will open
@@ -38,6 +38,7 @@ function newGame() {
     city: newCity(), relay: false, relayOn: true,
     governor: false, governorOn: true, ringer: false, ringerOn: true,
     orrery: newOrrery(), lamplighters: false, lamplightersOn: true, observer: false, observerOn: true,
+    great: newGreat(), astronomer: false, astronomerOn: true, finished: false,
     locks: {}, journal: [],
     time: 0,
   });
@@ -50,6 +51,7 @@ function migrate(s) {
   if (!s.tower) s.tower = newTower();
   if (!s.city) s.city = newCity();
   if (!s.orrery) s.orrery = newOrrery();
+  if (!s.great) s.great = newGreat();
   if (!s.locks) s.locks = {};
   if (!s.journal) s.journal = [];
   return s;
@@ -257,6 +259,7 @@ function lockAvailable(s, id) {
   if (id === 'case2') return s.struck;
   if (id === 'case3') return cityDone(s);
   if (id === 'case4') return orreryDone(s);
+  if (id === 'case5') return greatDone(s);
   return false;
 }
 function lockTurn(s, id, i, dir) {
@@ -516,8 +519,91 @@ PAGES.journal4 = { title: 'Page four: the watch key', text: [
   'I am going down. The key is in this case. If I have not come back, the old clock has kept me, and you will have to finish it from the outside.',
   '—M.' ] };
 
+// ---- Layer 7: the Great Clock ----
+// The old clock under the hill. Your four machines mesh with its great wheel one
+// at a time, and each one meshed multiplies the seconds it wins back by how far
+// that machine has come. Its own wheels follow the same rule as everything else.
+const GREAT_NAMES = ['Seconds Wheel', 'Minute Wheel', 'Hour Wheel', 'Year Wheel'];
+const GREAT_BASE = [10, 1e3, 1e6, 1e10];
+const GREAT_STEP = [1e3, 1e5, 1e7, 1e10];
+const MESH_NAMES = ['Your clocks', 'The clocktower', 'The city', 'The orrery'];
+const MESH_COST = [1e3, 1e8, 1e13, 1e18];
+function newGreat() { return { seconds: 10, wheels: GREAT_NAMES.map(() => ({ amount: 0, bought: 0 })), meshed: [false, false, false, false], done: false }; }
+const greatOpen = s => !!(s.locks.case4 && s.locks.case4.solved);
+function meshValue(s, k) {
+  return [1 + s.clocks, 1 + Math.log10(1 + s.tower.hours), 1 + Math.log10(1 + s.city.accord), 1 + Math.log10(1 + s.orrery.years)][k];
+}
+const meshMult = s => s.great.meshed.reduce((m, on, k) => on ? m * meshValue(s, k) : m, 1);
+function greatMult(s, i) { return Math.pow(2, Math.floor(s.great.wheels[i].bought / 10)) * (1 + Math.log10(1 + s.orrery.years)) * (i === 0 ? meshMult(s) : 1); }
+function greatCost(s, i) {
+  const sets = Math.floor(s.great.wheels[i].bought / 10), over = Math.max(0, sets - 10);
+  return GREAT_BASE[i] * Math.pow(GREAT_STEP[i], sets) * Math.pow(10, over * (over + 1) / 2);
+}
+function greatVisible(s, i) { return greatOpen(s) && (i === 0 || s.great.wheels[i - 1].bought > 0); }
+function buyGreat(s, i, max) {
+  let n = 0;
+  while (greatVisible(s, i)) {
+    const c = greatCost(s, i);
+    if (s.great.seconds < c || !isFinite(c)) break;
+    s.great.seconds -= c; s.great.wheels[i].bought++; s.great.wheels[i].amount++; n++;
+    if (!max || n >= 1000) break;
+  }
+  return n;
+}
+// Machines mesh in order: the clock first, the orrery last.
+const meshReady = (s, k) => greatOpen(s) && !s.great.meshed[k] && (k === 0 || s.great.meshed[k - 1]);
+function mesh(s, k) {
+  if (!meshReady(s, k) || s.great.seconds < MESH_COST[k]) return false;
+  s.great.seconds -= MESH_COST[k]; s.great.meshed[k] = true; return true;
+}
+// The astronomer sets the orrery's arms for you.
+const astronomerCost = 1e6;
+function buyAstronomer(s) { if (s.astronomer || s.great.seconds < astronomerCost) return false; s.great.seconds -= astronomerCost; s.astronomer = true; return true; }
+const greatDone = s => s.great.done || (s.great.seconds >= TUNE.greatGoal && (s.great.done = true));
+
+// ---- The last case: three hands ----
+// Each hand points at one of twelve marks. The answers are in the journal.
+const HANDS = { start: [4, 8, 1], target: [11, 3, 6] };
+function handsState(s) {
+  if (!s.locks.case5) s.locks.case5 = { hands: HANDS.start.slice(), solved: false };
+  return s.locks.case5;
+}
+function handTurn(s, i, dir) {
+  const st = handsState(s);
+  if (st.solved || !greatDone(s)) return false;
+  st.hands[i] = (st.hands[i] - 1 + dir + 12) % 12 + 1;
+  if (st.hands.join() === HANDS.target.join()) {
+    st.solved = true; s.finished = true; s.finishedAt = s.time;
+    if (!s.journal.includes(LOCKS.case5.page)) s.journal.push(LOCKS.case5.page);
+  }
+  return true;
+}
+function handsHint(s) {
+  const st = handsState(s);
+  for (let i = 0; i < 3; i++) if (st.hands[i] !== HANDS.target[i]) return { hand: i, mark: HANDS.target[i] };
+  return null;
+}
+LOCKS.case5 = {
+  clue: 'Set the hour hand to the winters I measured, the minute hand to how far behind the agreeing town ran, and the second hand to where every arm of the orrery pointed. —M.',
+  page: 'journal5',
+};
+PAGES.journal5 = { title: 'Page five: the keeper', text: [
+  'You came down the steps with my key, so I know you read every page.',
+  'I have been keeping the old clock going by hand, a turn at a time, for longer than I can tell you. It was never built to run alone. It was built to be met.',
+  'Your clock has met it. Listen: it runs by itself now, and the seconds are the right length again.',
+  'Come up with me. We will leave the door unlocked, in case it ever needs a keeper.',
+  '—M.' ] };
+
 function tick(s, dt) {
   s.time += dt;
+  if (greatOpen(s)) {
+    const g = s.great, w = g.wheels;
+    for (let i = w.length - 1; i >= 0; i--) {
+      if (w[i].amount <= 0) continue;
+      const made = w[i].amount * greatMult(s, i) * TUNE.greatSpeed * dt;
+      if (i === 0) g.seconds = Math.min(1e300, g.seconds + made); else w[i - 1].amount = Math.min(1e300, w[i - 1].amount + made);
+    }
+  }
   if (orreryOpen(s)) {
     const o = s.orrery, a = o.arms;
     o.t += dt;
@@ -568,6 +654,7 @@ function tick(s, dt) {
     if (s.ringer && s.ringerOn) runRinger(s);
     if (s.lamplighters && s.lamplightersOn) for (let i = 5; i >= 0; i--) buyDistrict(s, i, true);
     if (s.observer && s.observerOn) observe(s);
+    if (s.astronomer && s.astronomerOn) for (let i = 5; i >= 0; i--) buyArm(s, i, true);
     if (s.relay && s.relayOn && s.city.drift > 0.05) s.city.drift = 0;
   }
 }
@@ -581,5 +668,5 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   TUNE, GEAR_NAMES, AUTOMATONS, CHIME_AT, TOWER_AT, LOCKS, newGame, migrate, tick, buyGear, buySet, gearCost, gearMult, gearVisible,
   windGain, wind, canChime, chimeGain, chime, buySpring, buyOil, buyAuto, buyTempo, buyAutoWind,
   springCost, oilCost, tempoCost, spentTension, towerOpen, towerCost, buyTower, buyAutoChime, buyBell, bellCost,
-  canStrike, strike, chimeAt, CITY_NAMES, cityOpen, cityCost, cityVisible, cityMult, buyDistrict, sendSignal, buyRelay, relayCost, governorCost, buyGovernor, ORRERY_NAMES, ORBIT, orreryOpen, starMult, recordMult, armMult, armCost, armVisible, buyArm, armAngle, inLine, nextConjunction, newInLine, observe, lamplightersCost, buyLamplighters, observerCost, buyObserver, orreryDone, RATIO_TRAY, RATIO_TARGET, ratioState, ratioOf, ratioSet, ratioSolutions, ratioHint, PAGES, runGovernor, ringerCost, buyRinger, runRinger, cityDone, accordMult, countState, countRuns, countToggle, countHint, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
+  canStrike, strike, chimeAt, CITY_NAMES, cityOpen, cityCost, cityVisible, cityMult, buyDistrict, sendSignal, buyRelay, relayCost, governorCost, buyGovernor, GREAT_NAMES, MESH_NAMES, MESH_COST, greatOpen, meshValue, meshMult, greatMult, greatCost, greatVisible, buyGreat, meshReady, mesh, astronomerCost, buyAstronomer, greatDone, HANDS, handsState, handTurn, handsHint, ORRERY_NAMES, ORBIT, orreryOpen, starMult, recordMult, armMult, armCost, armVisible, buyArm, armAngle, inLine, nextConjunction, newInLine, observe, lamplightersCost, buyLamplighters, observerCost, buyObserver, orreryDone, RATIO_TRAY, RATIO_TARGET, ratioState, ratioOf, ratioSet, ratioSolutions, ratioHint, PAGES, runGovernor, ringerCost, buyRinger, runRinger, cityDone, accordMult, countState, countRuns, countToggle, countHint, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
 };

@@ -141,6 +141,9 @@ button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%;
 .dial-ctl button { min-width: 40px; font: 400 18px/1 var(--f-body); padding: 4px 8px; }
 .dial-ctl button.hinted { outline: 2px solid var(--red); outline-offset: 2px; }
 .sealed { font-style: italic; color: var(--ink-dim); margin: 0; }
+.ending { text-align: center; padding: 18px 20px; }
+.ending h2 { justify-content: center; border: 0; }
+.ending p { font: 400 20px/1.5 var(--f-hand); color: var(--red); margin: 6px auto 0; max-width: 60ch; }
 
 .journal { display: grid; gap: 22px; max-width: 680px; }
 .page { border: 1px solid var(--ink-faint); padding: 18px 20px; display: grid; gap: 10px; background: var(--paper); }
@@ -175,6 +178,7 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
     <button id="tabTower" role="tab" aria-selected="false" hidden>The Clocktower</button>
     <button id="tabCity" role="tab" aria-selected="false" hidden>The City</button>
     <button id="tabOrrery" role="tab" aria-selected="false" hidden>The Orrery</button>
+    <button id="tabGreat" role="tab" aria-selected="false" hidden>The Great Clock</button>
     <button id="tabJournal" role="tab" aria-selected="false" hidden>Journal</button>
   </nav>
 
@@ -382,6 +386,58 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
     </div>
   </div>
 
+  <!-- ===== Drawing No. 5: the Great Clock ===== -->
+  <div class="view" id="viewGreat" hidden>
+    <div class="stage" id="stage5">
+      <canvas id="great" width="1000" height="380" aria-label="The old clock's great wheel, with your four machines' pinions around its rim"></canvas>
+      <div class="plate tag">The Great Clock · great wheel and drives</div>
+      <div class="note" id="note5"></div>
+      <div class="titleblock" aria-hidden="true">
+        <div class="t">The Great Clock</div>
+        <div>Sheet <b>5</b> of 5</div><div>Scale: unknown</div>
+        <div>Drawn: M.</div><div>Traced: Apprentice</div>
+      </div>
+    </div>
+
+    <section id="endBox" hidden>
+      <div class="panel ending">
+        <h2>The Great Clock runs</h2>
+        <p id="endText"></p>
+      </div>
+    </section>
+
+    <div class="cols">
+      <section>
+        <h2>The old clock's wheels <small>turning in seconds</small></h2>
+        <div class="panel" id="greatWheels"></div>
+        <p class="hint">The Seconds Wheel wins back <b>seconds</b> the world has lost. Every wheel turns the one before it, as everywhere else. More years on the orrery make every wheel faster.</p>
+      </section>
+
+      <div class="col">
+        <section>
+          <h2>Mesh your machines <small id="meshLbl"></small></h2>
+          <div class="panel">
+            <p class="hint" id="meshHint"></p>
+            <div id="meshShop"></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Win back the lost time <small id="greatGoalLbl"></small></h2>
+          <div class="panel">
+            <p class="hint" id="greatGoalHint"></p>
+            <div class="meter"><div id="greatGoalMeter"></div></div>
+          </div>
+        </section>
+
+        <section id="case5Box" hidden>
+          <h2>The last case <small id="case5Lbl"></small></h2>
+          <div class="case" id="case5"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Journal ===== -->
   <div class="view" id="viewJournal" hidden>
     <section>
@@ -466,6 +522,16 @@ const NOTES4 = [
   [s => s.observer, 'The camera keeps the watch. It never blinks.'],
   [s => s.orrery.years >= 1e30, 'They all lean the same way, a little more each year.'],
   [s => orreryDone(s), 'The orrery is finished. It points down. The fourth case is in its base.'],
+  [s => greatOpen(s), 'Sheet 5. The last one. Its tab is open.'],
+];
+const NOTES5 = [
+  [s => true, 'There it is. Older than the hill, and barely turning.'],
+  [s => s.great.meshed[0], 'Your first clock meshes. Hear how it catches?'],
+  [s => s.great.meshed[1], 'The tower drives it now. Every hour you ever kept is pushing.'],
+  [s => s.astronomer, 'The astronomer sets the orrery for you. Good. Your hands are needed here.'],
+  [s => s.great.meshed[3], 'All four are meshed. Every machine you built is turning the old wheel.'],
+  [s => greatDone(s), 'The seconds are the right length again. One case left.'],
+  [s => s.finished, 'Wind it once a year. M.'],
 ];
 const noteFor = list => { let n = list[0][1]; for (const [ok, t] of list) if (ok(S)) n = t; return n; };
 
@@ -785,6 +851,35 @@ function drawOrrery() {
   for (let k = 0; k < 12; k++) { const t = k * Math.PI / 6; x.beginPath(); x.moveTo(cxo + Math.cos(t) * 16, cyo + Math.sin(t) * 16); x.lineTo(cxo + Math.cos(t) * 21, cyo + Math.sin(t) * 21); x.stroke(); }
 }
 const CONJ_W = 0.26;
+
+// ---------- Drawing No. 5: the Great Clock ----------
+const gcv = $('great'), gcx = gcv.getContext('2d');
+const GREAT_PITCH = 13;
+const GW = { n: 144, x: 540, y: 480 };
+GW.r = GW.n * GREAT_PITCH / (2 * Math.PI);
+const GREAT_T = { id: trainIds++, k: 1, add: ADDF * GREAT_PITCH, ded: DEDF * GREAT_PITCH };
+const DRIVES = [
+  { n: 16, th: -140 * Math.PI / 180, label: 'CLOCK' }, { n: 18, th: -110 * Math.PI / 180, label: 'TOWER' },
+  { n: 20, th: -70 * Math.PI / 180, label: 'CITY' }, { n: 22, th: -40 * Math.PI / 180, label: 'ORRERY' },
+].map(d => Object.assign(d, { r: d.n * GREAT_PITCH / (2 * Math.PI) }));
+let greatAngle = 0;
+function drawGreat(dt) {
+  const x = gcx, W = gcv.width, H = gcv.height, m = S.great.meshed;
+  if (m.some(Boolean)) greatAngle += dt * (0.01 + 0.004 * m.filter(Boolean).length);
+  x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, H);
+  x.setTransform(1, 0, 0, 1, 0, 0);
+  drawGear(x, GREAT_T, GW, greatAngle, 'built', S.finished);
+  x.font = '12px "Courier Prime", "Courier New", monospace'; x.textAlign = 'center';
+  x.fillStyle = COL.dim; x.fillText('THE OLD CLOCK · GREAT WHEEL, 144 TEETH', GW.x, GW.y - GW.r + 70);
+  DRIVES.forEach((d, k) => {
+    const dist = GW.r + d.r + (m[k] ? 0 : 22);
+    const p = { n: d.n, r: d.r, x: GW.x + Math.cos(d.th) * dist, y: GW.y + Math.sin(d.th) * dist };
+    const a = m[k] ? d.th + Math.PI - Math.PI / d.n + (d.th - greatAngle) * GW.n / d.n : 0;
+    drawGear(x, GREAT_T, p, a, m[k] ? 'built' : 'planned', false);
+    x.fillStyle = m[k] ? COL.red : COL.dim;
+    x.fillText(d.label, p.x, p.y - d.r - GREAT_T.add - 8);
+  });
+}
 
 // ---------- the master's cases ----------
 const lockAnim = {};
@@ -1129,6 +1224,63 @@ function updateRatioCase(box) {
   setDis(hb, !avail || st.solved || S.chimes < hintCost); hb.hidden = st.solved;
 }
 
+// ---------- the last case: three hands ----------
+const HAND_NAMES = ['Hour hand', 'Minute hand', 'Second hand'];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+function buildHandsCase(box) {
+  box.innerHTML = `<p class="clue">${LOCKS.case5.clue}</p>
+    <canvas class="train" width="300" height="300" aria-label="A clock face with hour, minute and second hands"></canvas>
+    <div class="dials" style="grid-template-columns: repeat(3, minmax(0, 1fr))"></div>
+    <p class="hint" data-k="status"></p>
+    <p class="sealed" hidden></p>
+    <div class="row"><span class="hint" data-k="moves"></span><button class="ghost" data-k="hint">Ask Tock for a hint <span class="c">${hintCost} chime</span></button></div>`;
+  const ctl = box.querySelector('.dials');
+  HAND_NAMES.forEach((nm, i) => {
+    const el = document.createElement('div'); el.className = 'dial-ctl';
+    el.innerHTML = `<span>${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Turn the ${nm.toLowerCase()} back">‹</button><button class="ghost" data-dir="1" aria-label="Turn the ${nm.toLowerCase()} on">›</button></span><span data-k="at"></span>`;
+    el.querySelectorAll('button').forEach(b => b.onclick = () => { if (handTurn(S, i, +b.dataset.dir)) { if (handsState(S).solved) onCaseOpened('case5'); refresh(); save(); } });
+    ctl.appendChild(el);
+  });
+  box.querySelector('[data-k=hint]').onclick = () => {
+    const st = handsState(S); if (S.chimes < hintCost || st.solved) return;
+    const h = handsHint(S); if (!h) return;
+    S.chimes -= hintCost;
+    box.querySelector('[data-k=moves]').textContent = `Tock says: the ${HAND_NAMES[h.hand].toLowerCase()} belongs at ${ROMAN[h.mark - 1]}.`;
+    refresh();
+  };
+}
+function drawHandsCase(box) {
+  const c = box.querySelector('canvas'); if (!c) return;
+  const st = handsState(S), key = st.hands.join() + st.solved + colorsVersion;
+  if (c._key === key) return; c._key = key;
+  const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, 300, 300); x.translate(150, 150);
+  x.beginPath(); x.arc(0, 0, 130, 0, Math.PI * 2); x.fillStyle = st.solved ? COL.wash : COL.paper; x.fill(); x.strokeStyle = COL.ink; x.lineWidth = 2; x.stroke();
+  x.beginPath(); x.arc(0, 0, 122, 0, Math.PI * 2); x.lineWidth = 0.8; x.stroke();
+  for (let k = 0; k < 60; k++) { const a = k * Math.PI / 30, r0 = k % 5 ? 116 : 110; x.beginPath(); x.moveTo(Math.sin(a) * r0, -Math.cos(a) * r0); x.lineTo(Math.sin(a) * 122, -Math.cos(a) * 122); x.lineWidth = k % 5 ? 0.6 : 1.4; x.stroke(); }
+  x.font = '17px "IM Fell English SC", Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = COL.ink;
+  ROMAN.forEach((r, k) => { const a = (k + 1) * Math.PI / 6; x.fillText(r, Math.sin(a) * 92, -Math.cos(a) * 92); });
+  const hand = (mark, len, w, col) => {
+    const a = mark * Math.PI / 6;
+    x.save(); x.rotate(a); x.strokeStyle = col; x.lineWidth = w; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(0, 14); x.lineTo(0, -len); x.stroke(); x.restore();
+  };
+  hand(st.hands[0], 58, 6, COL.ink); hand(st.hands[1], 92, 3.5, COL.ink); hand(st.hands[2], 104, 1.5, COL.red);
+  x.beginPath(); x.arc(0, 0, 6, 0, Math.PI * 2); x.fillStyle = COL.ink; x.fill();
+}
+function updateHandsCase(box) {
+  const st = handsState(S), avail = greatDone(S);
+  box.querySelectorAll('.dial-ctl').forEach((el, i) => {
+    el.querySelectorAll('button').forEach(b => setDis(b, !avail || st.solved));
+    setText(el.querySelector('[data-k=at]'), ROMAN[st.hands[i] - 1]);
+  });
+  setText(box.querySelector('[data-k=status]'), st.solved ? 'The hands lock. Somewhere below, a door opens.' : 'The answers are in the journal.');
+  const sealed = box.querySelector('.sealed');
+  sealed.hidden = avail && !st.solved;
+  setText(sealed, st.solved ? 'The case is open. The last page is in your journal.' : 'Win back the lost time first.');
+  const hb = box.querySelector('[data-k=hint]');
+  setDis(hb, !avail || st.solved || S.chimes < hintCost); hb.hidden = st.solved;
+}
+
 function onCaseOpened(id) {
   const page = PAGES[LOCKS[id].page];
   toast(`The case clicks open: ${page.title.toLowerCase()}.`);
@@ -1136,6 +1288,8 @@ function onCaseOpened(id) {
   if (id === 'case1') setTimeout(() => toast('Drawing No. 2 was under the page. The Clocktower is open.'), 2700);
   if (id === 'case2') setTimeout(() => toast('Drawing No. 3 was under the page. The City is open.'), 2700);
   if (id === 'case3') setTimeout(() => toast('Drawing No. 4 was under the page. The Orrery is open.'), 2700);
+  if (id === 'case4') setTimeout(() => toast('Under the page: Drawing No. 5, and the key. The Great Clock is open.'), 2700);
+  if (id === 'case5') setTimeout(() => { toast('You found him.'); show('great'); }, 2700);
 }
 
 // ---------- journal ----------
@@ -1146,9 +1300,9 @@ function renderJournal() {
     el.innerHTML = `<h3>${p.title}</h3>` + p.text.map((t, k) => `<p class="${k === p.text.length - 1 ? 'sig' : ''}">${t}</p>`).join('');
     box.appendChild(el);
   }
-  if (S.locks.case4 && S.locks.case4.solved) {
+  if (S.finished) {
     const el = document.createElement('p'); el.className = 'hint';
-    el.textContent = 'Drawing No. 5, the Great Clock, arrives in the next update.';
+    el.textContent = 'The end. The clock keeps running, and so can you.';
     box.appendChild(el);
   }
 }
@@ -1182,11 +1336,12 @@ function updateRow(row, item, vis, shown, cost, have, multText, unit) {
   setText(b2.querySelector('.c'), fmt(cost * (10 - set)) + unit); setDis(b2, !vis || have < cost || !isFinite(cost));
 }
 
-let gearRows = [], towerRows = [], cityRows = [], armRows = [];
+let gearRows = [], towerRows = [], cityRows = [], armRows = [], greatRows = [];
 function buyAll() {
   if (view === 'tower') { for (let i = 3; i >= 0; i--) if (buyTower(S, i, true)) tflash[i] = 1; }
   else if (view === 'city') { for (let i = 5; i >= 0; i--) buyDistrict(S, i, true); }
   else if (view === 'orrery') { for (let i = 5; i >= 0; i--) buyArm(S, i, true); }
+  else if (view === 'great') { for (let i = 3; i >= 0; i--) buyGreat(S, i, true); }
   else for (let i = 7; i >= 0; i--) if (buyGear(S, i, true)) flash[i] = 1;
   refresh();
 }
@@ -1337,12 +1492,51 @@ function refreshOrrery() {
   const n = noteFor(NOTES4); if ($('note4').textContent !== n) setText($('note4'), n);
 }
 
+function renderMeshShop() {
+  const box = $('meshShop'); box.innerHTML = '';
+  MESH_NAMES.forEach((nm, k) => {
+    const on = S.great.meshed[k], ready = meshReady(S, k);
+    const d = on ? `Meshed. Turns the Seconds Wheel ×${fmt(meshValue(S, k))}.` : `Would turn the Seconds Wheel ×${fmt(meshValue(S, k))}.` + (ready || k === 0 ? '' : ` Mesh ${MESH_NAMES[k - 1].toLowerCase()} first.`);
+    upgradeRow(box, nm, d, on ? '<span>Meshed</span>' : `<span>Mesh</span><span class="c">${fmt(MESH_COST[k])} s</span>`, on || !ready || S.great.seconds < MESH_COST[k], () => mesh(S, k));
+  });
+  const sw = S.astronomer ? (() => { const l = document.createElement('label'); l.className = 'switch'; l.innerHTML = `<input type="checkbox" id="auto-astro" ${S.astronomerOn ? 'checked' : ''}> working`; l.querySelector('input').onchange = e => S.astronomerOn = e.target.checked; return l; })() : null;
+  upgradeRow(box, 'The astronomer', 'Sets the orrery\'s arms for you while you work down here.', S.astronomer ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${fmt(astronomerCost)} s</span>`, S.astronomer || S.great.seconds < astronomerCost, () => buyAstronomer(S), sw);
+}
+let lastGreatKey = '';
+function refreshGreat() {
+  greatRows.forEach((row, i) => {
+    const w = S.great.wheels[i], vis = greatVisible(S, i);
+    updateRow(row, w, vis, vis || (i > 0 && greatVisible(S, i - 1)), greatCost(S, i), S.great.seconds,
+      vis ? `${fmt(w.amount)} turning · ×${fmt(greatMult(S, i))}` : `buy one ${GREAT_NAMES[i - 1]} first`, ' s');
+  });
+  const n = S.great.meshed.filter(Boolean).length;
+  setText($('meshLbl'), `${n} of 4 meshed`);
+  setHTML($('meshHint'), `Each machine you mesh turns the Seconds Wheel faster by how far it has come. Together: <b>×${fmt(meshMult(S))}</b>.`);
+  const gk = [S.great.meshed.join(), S.astronomer, ...MESH_COST.map(c => S.great.seconds >= c), S.great.seconds >= astronomerCost, Math.floor(Math.log10(meshMult(S)))].join('|');
+  if (gk !== lastGreatKey) { lastGreatKey = gk; renderMeshShop(); }
+  setText($('greatGoalLbl'), greatDone(S) ? 'won back' : `${fmt(S.great.seconds)} / ${fmt(TUNE.greatGoal)}`);
+  setHTML($('greatGoalHint'), `The world has lost about <b>${fmt(TUNE.greatGoal)} seconds</b> to the slowing. Win them back and the old clock runs by itself.`);
+  setWidth($('greatGoalMeter'), greatDone(S) ? 100 : Math.min(100, Math.log10(Math.max(1, S.great.seconds)) / Math.log10(TUNE.greatGoal) * 100));
+  if (greatDone(S)) reveal('case5Box');
+  setText($('case5Lbl'), S.locks.case5?.solved ? 'opened' : 'at the heart of the clock');
+  updateHandsCase($('case5'));
+  if (S.finished) {
+    reveal('endBox');
+    const hrs = (S.finishedAt || S.time) / 3600;
+    setText($('endText'), `Mercer is found, and the seconds are the right length again. You built it in ${hrs >= 1 ? hrs.toFixed(1) + ' hours' : Math.round(hrs * 60) + ' minutes'} of play.`);
+  }
+  const nt = noteFor(NOTES5); if ($('note5').textContent !== nt) setText($('note5'), nt);
+}
+
 // ---------- refresh ----------
 let lastShopKey = '', lastBenchKey = '', lastTowerKey = '', lastJournalN = -1;
 function reveal(id) { const el = $(id); if (el.hidden) { el.hidden = false; const p = el.querySelector('.panel, .case'); if (p) p.classList.add('fresh'); } }
 function refresh() {
   // readout
-  if (view === 'orrery') {
+  if (view === 'great') {
+    setTextP('readLbl', 'Seconds'); setTextP('readBig', fmt(S.great.seconds));
+    setTextP('readRate', fmt(S.great.wheels[0].amount * (S.great.wheels[0].amount > 0 ? greatMult(S, 0) * TUNE.greatSpeed : 0)) + ' / sec');
+  } else if (view === 'orrery') {
     setTextP('readLbl', 'Years'); setTextP('readBig', fmt(S.orrery.years));
     setTextP('readRate', fmt(S.orrery.arms[0].amount * (S.orrery.arms[0].amount > 0 ? armMult(S, 0) * TUNE.orrerySpeed : 0)) + ' / sec');
   } else if (view === 'city') {
@@ -1355,13 +1549,14 @@ function refresh() {
     setTextP('readLbl', 'Ticks'); setTextP('readBig', fmt(S.ticks));
     setTextP('readRate', fmt(S.gears[0].amount * gearMult(S, 0) * TUNE.speed) + ' / sec');
   }
-  setTextP('drawingNo', view === 'orrery' ? 'Drawing No. 4' : view === 'city' ? 'Drawing No. 3' : view === 'tower' ? 'Drawing No. 2' : view === 'journal' ? 'Journal' : 'Drawing No. 1');
+  setTextP('drawingNo', view === 'great' ? 'Drawing No. 5' : view === 'orrery' ? 'Drawing No. 4' : view === 'city' ? 'Drawing No. 3' : view === 'tower' ? 'Drawing No. 2' : view === 'journal' ? 'Journal' : 'Drawing No. 1');
 
   // nav
   const tOpen = towerOpen(S);
   $('nav').hidden = !(tOpen || S.journal.length);
   $('tabCity').hidden = !cityOpen(S);
   $('tabOrrery').hidden = !orreryOpen(S);
+  $('tabGreat').hidden = !greatOpen(S);
   $('tabTower').hidden = !tOpen;
   $('tabJournal').hidden = !S.journal.length;
   setTextP('tabJournal', `Journal (${S.journal.length})`);
@@ -1370,6 +1565,7 @@ function refresh() {
   if (view === 'tower') refreshTower();
   if (view === 'city') refreshCity();
   if (view === 'orrery') refreshOrrery();
+  if (view === 'great') refreshGreat();
   if (S.journal.length !== lastJournalN) { lastJournalN = S.journal.length; renderJournal(); }
 }
 function refreshClock() {
@@ -1440,9 +1636,9 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = fals
 // ---------- views ----------
 function show(v) {
   view = v;
-  $('viewClock').hidden = v !== 'clock'; $('viewTower').hidden = v !== 'tower'; $('viewCity').hidden = v !== 'city'; $('viewOrrery').hidden = v !== 'orrery'; $('viewJournal').hidden = v !== 'journal';
-  for (const [id, name] of [['tabClock', 'clock'], ['tabTower', 'tower'], ['tabCity', 'city'], ['tabOrrery', 'orrery'], ['tabJournal', 'journal']]) $(id).setAttribute('aria-selected', String(v === name));
-  lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = lastOrreryKey = '';
+  $('viewClock').hidden = v !== 'clock'; $('viewTower').hidden = v !== 'tower'; $('viewCity').hidden = v !== 'city'; $('viewOrrery').hidden = v !== 'orrery'; $('viewGreat').hidden = v !== 'great'; $('viewJournal').hidden = v !== 'journal';
+  for (const [id, name] of [['tabClock', 'clock'], ['tabTower', 'tower'], ['tabCity', 'city'], ['tabOrrery', 'orrery'], ['tabGreat', 'great'], ['tabJournal', 'journal']]) $(id).setAttribute('aria-selected', String(v === name));
+  lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = lastOrreryKey = lastGreatKey = '';
   refresh();
 }
 $('tabClock').onclick = () => show('clock');
@@ -1450,6 +1646,7 @@ $('tabTower').onclick = () => show('tower');
 $('tabJournal').onclick = () => show('journal');
 $('tabCity').onclick = () => show('city');
 $('tabOrrery').onclick = () => show('orrery');
+$('tabGreat').onclick = () => show('great');
 
 // ---------- save / load ----------
 function save() { try { S.savedAt = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
@@ -1498,9 +1695,9 @@ function bindReset() {
     w.innerHTML = '<span>Erase all progress?</span> <button id="resetYes">Erase</button> <button class="ghost" id="resetNo">Keep</button>';
     $('resetYes').onclick = () => {
       S = newGame(); try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-      for (const k of ['windBox', 'shopBox', 'chimeBox', 'benchBox', 'case1Box', 'case2Box', 'case3Box', 'case4Box']) $(k).hidden = true;
+      for (const k of ['windBox', 'shopBox', 'chimeBox', 'benchBox', 'case1Box', 'case2Box', 'case3Box', 'case4Box', 'case5Box', 'endBox']) $(k).hidden = true;
       for (const k in lockAnim) delete lockAnim[k];
-      lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = lastOrreryKey = ''; lastJournalN = -1; bindReset(); show('clock');
+      lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = lastOrreryKey = lastGreatKey = ''; lastJournalN = -1; bindReset(); show('clock');
     };
     $('resetNo').onclick = bindReset;
   };
@@ -1519,6 +1716,9 @@ function frame(now) {
     drawMachine(dt);
     if (slow) document.querySelectorAll('#bench canvas').forEach((c, k) => { if (k < S.clocks) drawFace(c, faceT + k * 7, k); });
     if (!$('case1Box').hidden) drawCase('case1', $('case1'), dt);
+  } else if (view === 'great') {
+    if (slow || S.great.meshed.some(Boolean)) drawGreat(dt);
+    if (!$('case5Box').hidden) drawHandsCase($('case5'));
   } else if (view === 'orrery') {
     if (slow) drawOrrery();
     if (!$('case4Box').hidden) drawRatioCase($('case4'), dt);
@@ -1540,8 +1740,9 @@ function start(data) {
   gearRows = buildRows($('gears'), GEAR_NAMES, i => { if (buyGear(S, i, false)) flash[i] = 1; }, i => { if (buySet(S, i)) flash[i] = 1; });
   towerRows = buildRows($('towerWheels'), TOWER_NAMES, i => { if (buyTower(S, i, false)) tflash[i] = 1; }, buyTowerSet);
   cityRows = buildRows($('districts'), CITY_NAMES, i => buyDistrict(S, i, false), i => { let n = 0; do { if (!buyDistrict(S, i, false)) break; n++; } while (S.city.districts[i].bought % 10 !== 0); });
+  greatRows = buildRows($('greatWheels'), GREAT_NAMES, i => buyGreat(S, i, false), i => { do { if (!buyGreat(S, i, false)) break; } while (S.great.wheels[i].bought % 10 !== 0); });
   armRows = buildRows($('arms'), ORRERY_NAMES, i => buyArm(S, i, false), i => { do { if (!buyArm(S, i, false)) break; } while (S.orrery.arms[i].bought % 10 !== 0); });
-  buildCase('case1', $('case1')); buildTrainCase($('case2')); buildCountCase($('case3')); buildRatioCase($('case4'));
+  buildCase('case1', $('case1')); buildTrainCase($('case2')); buildCountCase($('case3')); buildRatioCase($('case4')); buildHandsCase($('case5'));
   bindReset();
   if (S.savedAt && !(data && data.S)) catchUp((Date.now() - S.savedAt) / 1000);
   show(data && data.view ? data.view : 'clock');
