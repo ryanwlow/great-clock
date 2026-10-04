@@ -1,8 +1,9 @@
 // Pacing check: a greedy bot plays the game and logs its milestones.
 // Run with: node tools/sim.js
 const E = require('../engine.js');
+if (process.env.TUNE) Object.assign(E.TUNE, JSON.parse(process.env.TUNE));
 const s = E.newGame();
-const dt = 0.1; let t = 0;
+const dt = +(process.env.SIM_DT || 0.1); let t = 0;
 const log = m => console.log(`${(t / 60).toFixed(1).padStart(6)}m  ${m}`);
 const seen = new Set(); const once = (k, m) => { if (!seen.has(k)) { seen.add(k); log(m); } };
 function spend() {

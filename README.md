@@ -14,6 +14,19 @@ Open `index.html` in a browser to play. There's no build step.
 
 There are two drawing styles: Linen (sepia on paper) and Lamplight (dark). By default it follows the device setting.
 
+## Pacing target
+
+The whole game (five drawings: clock, tower, city, orrery, Great Clock) should take 30 to 40 hours. For the first two drawings, the targets for active play are:
+
+| Milestone | Bot (sim) | Expected player |
+|---|---|---|
+| First wind | 7 min | 5 to 10 min |
+| First clock | 45 min | about 1 h |
+| Clocktower opens | 53 min | about 1.25 h |
+| Tower strikes | 4 h | about 5 h |
+
+Offline progress catches up to 12 hours.
+
 ## Design rules
 
 - Each prestige layer adds one new verb.
@@ -25,5 +38,5 @@ There are two drawing styles: Linen (sepia on paper) and Lamplight (dark). By de
 
 - `engine.js`: game rules, with no DOM. Used by both the page and the simulator.
 - `index.html`: page, styles and rendering.
-- `tools/sim.js`: a greedy bot that checks pacing (`node tools/sim.js`). The bot finishes the first clock at about 19 minutes, opens the tower at about 23, and strikes at about 43.
+- `tools/sim.js`: a greedy bot that checks pacing (`node tools/sim.js`, with `TUNE='{...}'` to try knob values). Pacing knobs are in `TUNE` in `engine.js`.
 - `tools/build-single.js`: inlines the engine into one file for publishing as a claude.ai artifact.

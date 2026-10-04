@@ -2,14 +2,17 @@
 const GEAR_NAMES = ['Pinion', 'Crown Wheel', 'Escape Wheel', 'Third Wheel', 'Centre Wheel', 'Great Wheel', 'Barrel', 'Fusee'];
 const GEAR_BASE = [10, 100, 1e4, 1e6, 1e9, 1e13, 1e18, 1e24];
 const GEAR_STEP = [1e3, 1e4, 1e5, 1e6, 1e8, 1e10, 1e12, 1e15];
-const WIND_AT = 1e10;    // ticks in a run before the spring can be wound
-const CHIME_AT = 1e45;   // ticks needed to finish the first clock; each later clock is larger
+// Pacing knobs (tools/sim.js tunes these against the target timeline).
+// Target (active play): first wind ~5-7 min, first clock ~1 h, Clocktower ~1.5 h,
+// first strike ~5 h; the whole game (five drawings) is meant to run 30-40 h.
+const TUNE = { speed: 0.3, tension: 1, clockGrowth: 5, towerSpeed: 0.15, strikeAt: 1e9, windAt: 1e6 };
+
+const CHIME_AT = 1e60;   // ticks needed to finish the first clock; each later clock is larger
 const TOWER_AT = 5;      // finished clocks before the master's first case will open
 
 const TOWER_NAMES = ['Pendulum Arbor', 'Hour Wheel', 'Going Barrel', 'Great Turret Wheel'];
 const TOWER_BASE = [1, 10, 300, 1e4];
 const TOWER_STEP = [8, 60, 600, 8000];
-const STRIKE_AT = 1e9;   // hours needed to strike the tower's first hour
 
 const AUTOMATONS = [
   { id: 'pip',  name: 'Pip',  gears: [0, 1], cost: 1,  note: 'Fits gears one and two. Hums while it works.' },
@@ -91,10 +94,10 @@ function buySet(s, i) {
 }
 
 function windGain(s) {
-  if (s.runTicks < WIND_AT) return 0;
+  if (s.runTicks < TUNE.windAt) return 0;
   // Gains slow down past the first clock's size so the spring can't run away.
   const l = Math.log10(s.runTicks);
-  return Math.floor(Math.pow(10, Math.min(l - 10, 35) / 6 + Math.max(0, l - 45) / 20));
+  return Math.max(1, Math.floor(TUNE.tension * Math.pow(10, Math.min(l - 10, 35) / 6 + Math.max(0, l - 45) / 20)));
 }
 function wind(s) {
   const g = windGain(s);
@@ -104,7 +107,7 @@ function wind(s) {
   return true;
 }
 
-const chimeAt = s => CHIME_AT * Math.pow(10, 5 * s.clocks);
+const chimeAt = s => CHIME_AT * Math.pow(10, TUNE.clockGrowth * s.clocks);
 function canChime(s) { return s.ticks >= chimeAt(s); }
 const bellMult = s => Math.pow(2, s.bells);
 function chimeGain(s) { return canChime(s) ? bellMult(s) * Math.max(1, Math.floor(Math.log10(s.ticks / chimeAt(s)) + 1)) : 0; }
@@ -147,7 +150,7 @@ const autoChimeCost = 10;
 const bellCost = s => 5 * Math.pow(3, s.bells);
 function buyAutoChime(s) { if (s.autoChime || s.chimes < autoChimeCost) return false; s.chimes -= autoChimeCost; s.autoChime = true; return true; }
 function buyBell(s) { const c = bellCost(s); if (s.chimes < c) return false; s.chimes -= c; s.bells++; return true; }
-function canStrike(s) { return !s.struck && s.tower.hours >= STRIKE_AT; }
+function canStrike(s) { return !s.struck && s.tower.hours >= TUNE.strikeAt; }
 function strike(s) { if (!canStrike(s)) return false; s.struck = true; return true; }
 
 // ---- The master's cases: gear-dial locks ----
@@ -249,14 +252,14 @@ function tick(s, dt) {
     const w = s.tower.wheels;
     for (let i = w.length - 1; i >= 0; i--) {
       if (w[i].amount <= 0) continue;
-      const made = w[i].amount * towerMult(s, i) * dt;
+      const made = w[i].amount * towerMult(s, i) * TUNE.towerSpeed * dt;
       if (i === 0) s.tower.hours += made; else w[i - 1].amount += made;
     }
   }
   for (let i = GEAR_NAMES.length - 1; i >= 0; i--) {
     const g = s.gears[i];
     if (g.amount <= 0) continue;
-    const made = g.amount * gearMult(s, i) * dt;
+    const made = g.amount * gearMult(s, i) * TUNE.speed * dt;
     if (i === 0) { s.ticks = Math.min(1e300, s.ticks + made); s.runTicks = Math.min(1e300, s.runTicks + made); }
     else s.gears[i - 1].amount = Math.min(1e300, s.gears[i - 1].amount + made);
   }
@@ -279,7 +282,7 @@ function spentTension(s) {
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = {
-  GEAR_NAMES, AUTOMATONS, WIND_AT, CHIME_AT, TOWER_AT, STRIKE_AT, LOCKS, newGame, migrate, tick, buyGear, buySet, gearCost, gearMult, gearVisible,
+  TUNE, GEAR_NAMES, AUTOMATONS, CHIME_AT, TOWER_AT, LOCKS, newGame, migrate, tick, buyGear, buySet, gearCost, gearMult, gearVisible,
   windGain, wind, canChime, chimeGain, chime, buySpring, buyOil, buyAuto, buyTempo, buyAutoWind,
   springCost, oilCost, tempoCost, spentTension, towerOpen, towerCost, buyTower, buyAutoChime, buyBell, bellCost,
   canStrike, strike, chimeAt, lockState, lockTurn, lockHint, lockAvailable,
