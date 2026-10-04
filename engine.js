@@ -4,9 +4,9 @@ const GEAR_BASE = [10, 100, 1e4, 1e6, 1e9, 1e13, 1e18, 1e24];
 const GEAR_STEP = [1e3, 1e4, 1e5, 1e6, 1e8, 1e10, 1e12, 1e15];
 // Pacing knobs (tools/sim.js tunes these against the target timeline).
 // Target (active play): first wind ~5-7 min, first clock ~1 h, Clocktower ~1.5 h,
-// first strike ~5 h, city synchronised ~13 h; the whole game (five drawings)
+// first strike ~5 h, city synchronised ~13 h, orrery complete ~23 h; the whole game (five drawings)
 // is meant to run 30-40 h.
-const TUNE = { speed: 0.3, tension: 1, clockGrowth: 5, towerSpeed: 0.15, strikeAt: 1e9, windAt: 1e6, citySpeed: 0.03, cityGoal: 1e30, driftTime: 90 };
+const TUNE = { speed: 0.3, tension: 1, clockGrowth: 5, towerSpeed: 0.15, strikeAt: 1e9, windAt: 1e6, citySpeed: 0.03, cityGoal: 1e30, driftTime: 90, orrerySpeed: 0.001, orreryGoal: 1e40 };
 
 const CHIME_AT = 1e60;   // ticks needed to finish the first clock; each later clock is larger
 const TOWER_AT = 5;      // finished clocks before the master's first case will open
@@ -37,6 +37,7 @@ function newGame() {
     tower: newTower(), bells: 0, autoChime: false, autoChimeOn: true, struck: false,
     city: newCity(), relay: false, relayOn: true,
     governor: false, governorOn: true, ringer: false, ringerOn: true,
+    orrery: newOrrery(), lamplighters: false, lamplightersOn: true, observer: false, observerOn: true,
     locks: {}, journal: [],
     time: 0,
   });
@@ -48,6 +49,7 @@ function migrate(s) {
   if (Array.isArray(s.clocks)) s.clocks = s.clocks.length;
   if (!s.tower) s.tower = newTower();
   if (!s.city) s.city = newCity();
+  if (!s.orrery) s.orrery = newOrrery();
   if (!s.locks) s.locks = {};
   if (!s.journal) s.journal = [];
   return s;
@@ -254,6 +256,7 @@ function lockAvailable(s, id) {
   if (id === 'case1') return s.clocks >= TOWER_AT;
   if (id === 'case2') return s.struck;
   if (id === 'case3') return cityDone(s);
+  if (id === 'case4') return orreryDone(s);
   return false;
 }
 function lockTurn(s, id, i, dir) {
@@ -371,7 +374,7 @@ const hintCost = 1;
 // signal is sent (by hand, or by the relay).
 const sync = s => 1 - s.city.drift;
 function cityMult(s, i) {
-  return Math.pow(2, Math.floor(s.city.districts[i].bought / 10)) * (1 + Math.log10(1 + s.tower.hours)) * sync(s);
+  return Math.pow(2, Math.floor(s.city.districts[i].bought / 10)) * (1 + Math.log10(1 + s.tower.hours)) * sync(s) * starMult(s);
 }
 function cityCost(s, i) {
   const sets = Math.floor(s.city.districts[i].bought / 10), over = Math.max(0, sets - 10);
@@ -403,8 +406,129 @@ function buyRelay(s) { if (s.relay || s.city.accord < relayCost) return false; s
 // Latches: once the city is in step, spending accord never undoes it.
 const cityDone = s => s.city.synced || (s.city.accord >= TUNE.cityGoal && (s.city.synced = true));
 
+// ---- Layer 6: the Orrery ----
+// Six planet arms on one brass sun. Earth's arm makes years, and each arm turns
+// the one before it, as everywhere else. The arms really orbit, at true ratios:
+// when a planet comes into line with Earth you can observe the conjunction, and
+// every recorded conjunction makes the whole orrery run faster.
+const ORRERY_NAMES = ['Earth', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'];
+const ORRERY_BASE = [10, 100, 1e4, 1e6, 1e9, 1e13];
+const ORRERY_STEP = [1e3, 1e4, 1e5, 1e6, 1e8, 1e10];
+const ORBIT = [240, 58, 147, 451, 2847, 7070];   // seconds per turn of the model; Earth's year is four minutes
+const CONJ_WIDTH = 0.26;                          // about 15 degrees either side of Earth's line
+function newOrrery() { return { years: 10, t: 0, arms: ORRERY_NAMES.map(() => ({ amount: 0, bought: 0 })), records: 0, logged: ORRERY_NAMES.map(() => false) }; }
+const orreryOpen = s => !!(s.locks.case3 && s.locks.case3.solved);
+const starMult = s => orreryOpen(s) ? Math.pow(1 + s.orrery.years, 0.08) : 1;
+const recordMult = s => Math.pow(2, s.orrery.records / 10);
+function armMult(s, i) {
+  // Recorded conjunctions speed up Earth's arm only, so they can't compound down the chain.
+  return Math.pow(2, Math.floor(s.orrery.arms[i].bought / 10)) * (1 + Math.log10(1 + s.city.accord)) * (i === 0 ? recordMult(s) : 1);
+}
+function armCost(s, i) {
+  const sets = Math.floor(s.orrery.arms[i].bought / 10), over = Math.max(0, sets - 10);
+  return ORRERY_BASE[i] * Math.pow(ORRERY_STEP[i], sets) * Math.pow(10, over * (over + 1) / 2);
+}
+function armVisible(s, i) { return orreryOpen(s) && (i === 0 || s.orrery.arms[i - 1].bought > 0); }
+function buyArm(s, i, max) {
+  let n = 0;
+  while (armVisible(s, i)) {
+    const c = armCost(s, i);
+    if (s.orrery.years < c || !isFinite(c)) break;
+    s.orrery.years -= c; s.orrery.arms[i].bought++; s.orrery.arms[i].amount++; n++;
+    if (!max || n >= 1000) break;
+  }
+  return n;
+}
+const armAngle = (s, i) => (s.orrery.t / ORBIT[i] % 1) * 2 * Math.PI;
+// Planets (built, other than Earth) lying within the window of Earth's line.
+function inLine(s) {
+  const out = [], e = armAngle(s, 0);
+  for (let i = 1; i < ORRERY_NAMES.length; i++) {
+    if (!s.orrery.arms[i].bought) continue;
+    const d = Math.abs(((armAngle(s, i) - e) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI);
+    if (d < CONJ_WIDTH) out.push(i);
+  }
+  return out;
+}
+// Seconds until planet i next comes into line with Earth (0 if it is in line now).
+function nextConjunction(s, i) {
+  const wE = 2 * Math.PI / ORBIT[0], wi = 2 * Math.PI / ORBIT[i], TAU = 2 * Math.PI;
+  const r = ((armAngle(s, i) - armAngle(s, 0)) % TAU + TAU) % TAU;
+  if (r < CONJ_WIDTH || r > TAU - CONJ_WIDTH) return 0;
+  return wi > wE ? (TAU - CONJ_WIDTH - r) / (wi - wE) : (r - CONJ_WIDTH) / (wE - wi);
+}
+const newInLine = s => inLine(s).filter(i => !s.orrery.logged[i]);
+// Two planets in line at once count four, three count nine.
+function observe(s) {
+  const k = newInLine(s); if (!k.length) return 0;
+  for (const i of k) s.orrery.logged[i] = true;
+  s.orrery.records += k.length * k.length;
+  return k.length * k.length;
+}
+// The lamplighters' guild wires new dials in the city for you.
+const lamplightersCost = 1e4;
+function buyLamplighters(s) { if (s.lamplighters || s.orrery.years < lamplightersCost) return false; s.orrery.years -= lamplightersCost; s.lamplighters = true; return true; }
+// The observatory camera records every conjunction for you.
+const observerCost = 1e25;
+function buyObserver(s) { if (s.observer || s.orrery.years < observerCost) return false; s.orrery.years -= observerCost; s.observer = true; return true; }
+const orreryDone = s => s.orrery.done || (s.orrery.years >= TUNE.orreryGoal && (s.orrery.done = true));
+
+// ---- Case 4: compound ratios ----
+// Two pairs of wheels on a shared arbor carry Earth's turn to the Moon's arm.
+// The Moon must go round twelve times a year; no wheel may be used twice.
+const RATIO_TRAY = [10, 15, 20, 30, 40, 60];
+const RATIO_TARGET = 12;
+function ratioState(s) {
+  if (!s.locks.case4) s.locks.case4 = { slots: [null, null, null, null], solved: false };
+  return s.locks.case4;
+}
+const ratioOf = sl => sl.every(Boolean) ? (sl[0] / sl[1]) * (sl[2] / sl[3]) : null;
+function ratioSet(s, slot, n) {
+  const st = ratioState(s);
+  if (st.solved || !orreryDone(s)) return false;
+  if (n !== null && st.slots.some((v, k) => k !== slot && v === n)) return false;
+  st.slots[slot] = n;
+  if (ratioOf(st.slots) === RATIO_TARGET) {
+    st.solved = true;
+    if (!s.journal.includes(LOCKS.case4.page)) s.journal.push(LOCKS.case4.page);
+  }
+  return true;
+}
+function ratioSolutions() {
+  const out = [], T = RATIO_TRAY;
+  for (const a of T) for (const b of T) for (const c of T) for (const d of T)
+    if (new Set([a, b, c, d]).size === 4 && (a * c) === RATIO_TARGET * b * d) out.push([a, b, c, d]);
+  return out;
+}
+function ratioHint(s) {
+  const st = ratioState(s);
+  const best = ratioSolutions().map(sol => ({ sol, hit: sol.filter((v, k) => st.slots[k] === v).length })).sort((x, y) => y.hit - x.hit)[0].sol;
+  for (let k = 0; k < 4; k++) if (st.slots[k] !== best[k]) return { slot: k, n: best[k] };
+  return null;
+}
+LOCKS.case4 = {
+  clue: 'Twelve moons to the year. Two pairs of wheels, and no wheel used twice. —M.',
+  page: 'journal4',
+};
+PAGES.journal4 = { title: 'Page four: the watch key', text: [
+  'Every arm of the orrery points the same way at the great conjunction. Not up. Down, into the hill under the observatory.',
+  'There are steps there, cut long before the observatory was built, and at the bottom a door with a winding square in it. My watch key fits it.',
+  'I am going down. The key is in this case. If I have not come back, the old clock has kept me, and you will have to finish it from the outside.',
+  '—M.' ] };
+
 function tick(s, dt) {
   s.time += dt;
+  if (orreryOpen(s)) {
+    const o = s.orrery, a = o.arms;
+    o.t += dt;
+    for (let i = a.length - 1; i >= 0; i--) {
+      if (a[i].amount <= 0) continue;
+      const made = a[i].amount * armMult(s, i) * TUNE.orrerySpeed * dt;
+      if (i === 0) o.years = Math.min(1e300, o.years + made); else a[i - 1].amount = Math.min(1e300, a[i - 1].amount + made);
+    }
+    const now = inLine(s);
+    for (let i = 1; i < a.length; i++) if (o.logged[i] && !now.includes(i)) o.logged[i] = false;
+  }
   if (cityOpen(s)) {
     const c = s.city, d = c.districts;
     if (d.some(x => x.amount > 0)) c.drift += (0.8 - c.drift) * Math.min(1, dt / TUNE.driftTime);
@@ -442,6 +566,8 @@ function tick(s, dt) {
     if (s.autoChime && s.autoChimeOn && canChime(s)) chime(s);
     if (s.governor && s.governorOn) runGovernor(s);
     if (s.ringer && s.ringerOn) runRinger(s);
+    if (s.lamplighters && s.lamplightersOn) for (let i = 5; i >= 0; i--) buyDistrict(s, i, true);
+    if (s.observer && s.observerOn) observe(s);
     if (s.relay && s.relayOn && s.city.drift > 0.05) s.city.drift = 0;
   }
 }
@@ -455,5 +581,5 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   TUNE, GEAR_NAMES, AUTOMATONS, CHIME_AT, TOWER_AT, LOCKS, newGame, migrate, tick, buyGear, buySet, gearCost, gearMult, gearVisible,
   windGain, wind, canChime, chimeGain, chime, buySpring, buyOil, buyAuto, buyTempo, buyAutoWind,
   springCost, oilCost, tempoCost, spentTension, towerOpen, towerCost, buyTower, buyAutoChime, buyBell, bellCost,
-  canStrike, strike, chimeAt, CITY_NAMES, cityOpen, cityCost, cityVisible, cityMult, buyDistrict, sendSignal, buyRelay, relayCost, governorCost, buyGovernor, runGovernor, ringerCost, buyRinger, runRinger, cityDone, accordMult, countState, countRuns, countToggle, countHint, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
+  canStrike, strike, chimeAt, CITY_NAMES, cityOpen, cityCost, cityVisible, cityMult, buyDistrict, sendSignal, buyRelay, relayCost, governorCost, buyGovernor, ORRERY_NAMES, ORBIT, orreryOpen, starMult, recordMult, armMult, armCost, armVisible, buyArm, armAngle, inLine, nextConjunction, newInLine, observe, lamplightersCost, buyLamplighters, observerCost, buyObserver, orreryDone, RATIO_TRAY, RATIO_TARGET, ratioState, ratioOf, ratioSet, ratioSolutions, ratioHint, PAGES, runGovernor, ringerCost, buyRinger, runRinger, cityDone, accordMult, countState, countRuns, countToggle, countHint, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
 };

@@ -25,7 +25,7 @@ function spendChimes() {
   }
 }
 let lastLog = 0;
-while (t < (+process.env.SIM_HOURS || 2) * 3600 && !E.cityDone(s)) {
+while (t < (+process.env.SIM_HOURS || 2) * 3600 && !E.orreryDone(s)) {
   if (process.env.SIM_TRACE && t - lastLog > 60) { lastLog = t; log(`  accord=${s.city.accord.toExponential(1)} clocks=${s.clocks} hours=${s.tower.hours.toExponential(1)} chimes=${Math.floor(s.chimes)} ticks=${s.ticks.toExponential(1)} spring=${s.spring} tempo=${s.tempo} m1=${E.gearMult(s, 0).toExponential(1)}`); }
   if (Math.round(t * 10) % 5 === 0) { for (let i = 7; i >= 0; i--) while (E.buySet(s, i) > 0) {} spendChimes(); }
   E.tick(s, dt); t += dt;
@@ -49,5 +49,14 @@ while (t < (+process.env.SIM_HOURS || 2) * 3600 && !E.cityDone(s)) {
     if (s.relay) once('relay', 'relay bought');
     for (const e of [10, 20]) if (s.city.accord >= 10 ** e) once('a' + e, `1e${e} accord, districts=${s.city.districts.map(d => d.bought).join(',')}`);
   }
+  if (E.cityDone(s) && !E.orreryOpen(s)) { log('city synchronised: case 3 opens'); [3, 4, 8].forEach(i => E.countToggle(s, i)); log('case 3 solved: orrery open'); }
+  if (E.orreryOpen(s)) {
+    if (Math.round(t * 10) % 5 === 0) { E.buyLamplighters(s); E.buyObserver(s); for (let i = 5; i >= 0; i--) E.buyArm(s, i, true); }
+    // a player glances at the orrery every half minute or so
+    if (!s.observer && Math.round(t * 10) % 300 === 0) E.observe(s);
+    if (s.lamplighters) once('lamp', 'lamplighters bought');
+    if (s.observer) once('obs', `observer bought, records=${s.orrery.records}`);
+    for (const e of [10, 20, 30]) if (s.orrery.years >= 10 ** e) once('y' + e, `1e${e} years, arms=${s.orrery.arms.map(d => d.bought).join(',')}, records=${s.orrery.records}`);
+  }
 }
-if (E.cityDone(s)) log('city synchronised: case 3 opens');
+if (E.orreryDone(s)) log(`orrery complete: case 4 opens, records=${s.orrery.records}`);

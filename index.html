@@ -174,6 +174,7 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
     <button id="tabClock" role="tab" aria-selected="true">The Clock</button>
     <button id="tabTower" role="tab" aria-selected="false" hidden>The Clocktower</button>
     <button id="tabCity" role="tab" aria-selected="false" hidden>The City</button>
+    <button id="tabOrrery" role="tab" aria-selected="false" hidden>The Orrery</button>
     <button id="tabJournal" role="tab" aria-selected="false" hidden>Journal</button>
   </nav>
 
@@ -334,6 +335,53 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
     </div>
   </div>
 
+  <!-- ===== Drawing No. 4: the orrery ===== -->
+  <div class="view" id="viewOrrery" hidden>
+    <div class="stage" id="stage4">
+      <canvas id="orrery" width="1000" height="380" aria-label="Plan of the orrery: planet arms orbiting a brass sun, with Earth's line of sight marked"></canvas>
+      <div class="plate tag">The orrery · plan, arms at their present places</div>
+      <div class="note" id="note4"></div>
+      <div class="titleblock" aria-hidden="true">
+        <div class="t">The Great Clock</div>
+        <div>Sheet <b>4</b> of 5</div><div>Scale 1 : 1</div>
+        <div>Drawn: M.</div><div>Traced: Apprentice</div>
+      </div>
+    </div>
+
+    <div class="cols">
+      <section>
+        <h2>Planet arms <small>geared in years</small></h2>
+        <div class="panel" id="arms"></div>
+        <p class="hint">Earth's arm makes <b>years</b>. Every arm turns the one before it, as everywhere else. A more agreeable city makes every arm faster, and years make every district in the city faster in return.</p>
+      </section>
+
+      <div class="col">
+        <section>
+          <h2>Conjunctions <small id="conjLbl"></small></h2>
+          <div class="panel">
+            <p class="hint" id="conjHint"></p>
+            <button class="big" id="observeBtn">Observe the conjunction</button>
+            <p class="hint" id="conjNext"></p>
+            <div id="orreryShop"></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Complete the orrery <small id="orreryGoalLbl"></small></h2>
+          <div class="panel">
+            <p class="hint" id="orreryGoalHint"></p>
+            <div class="meter"><div id="orreryGoalMeter"></div></div>
+          </div>
+        </section>
+
+        <section id="case4Box" hidden>
+          <h2>The fourth case <small id="case4Lbl"></small></h2>
+          <div class="case" id="case4"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Journal ===== -->
   <div class="view" id="viewJournal" hidden>
     <section>
@@ -408,6 +456,16 @@ const NOTES3 = [
   [s => s.relay, 'The relay sends the signal for you now. Listen to them all click at once.'],
   [s => s.city.accord >= 1e20, 'Nearly every bell in the valley agrees. Keep going.'],
   [s => cityDone(s), 'The city is in step. The third case is in the observatory.'],
+  [s => orreryOpen(s), 'Sheet 4 is an orrery. Its tab is open.'],
+];
+const NOTES4 = [
+  [s => true, 'Six arms on one sun. Earth\'s turns are the years.'],
+  [s => s.orrery.arms[1].bought > 0, 'Watch the red line. When a planet crosses it, look.'],
+  [s => s.orrery.records >= 5, 'The astronomer\'s book agrees with every one I have seen.'],
+  [s => s.lamplighters, 'The lamplighters wire the city now. I can stop climbing ladders.'],
+  [s => s.observer, 'The camera keeps the watch. It never blinks.'],
+  [s => s.orrery.years >= 1e30, 'They all lean the same way, a little more each year.'],
+  [s => orreryDone(s), 'The orrery is finished. It points down. The fourth case is in its base.'],
 ];
 const noteFor = list => { let n = list[0][1]; for (const [ok, t] of list) if (ok(S)) n = t; return n; };
 
@@ -689,6 +747,45 @@ function drawCity() {
   });
 }
 
+// ---------- Drawing No. 4: the orrery ----------
+const ocv = $('orrery'), ocx = ocv.getContext('2d');
+const ORB_R = [95, 40, 65, 125, 155, 180];        // orbit radius for Earth, Mercury, Venus, Mars, Jupiter, Saturn
+const PLANET_R = [7, 4, 6, 5, 10, 9];
+function drawOrrery() {
+  const x = ocx, W = ocv.width, H = ocv.height, cxo = 520, cyo = 192;
+  x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, H);
+  const a = S.orrery.arms, lit = new Set(inLine(S)), e = armAngle(S, 0);
+  const shown = i => a[i].bought > 0 || armVisible(S, i);
+  // Earth's line of sight and its window
+  x.save(); x.translate(cxo, cyo); x.rotate(e - Math.PI / 2);
+  x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, 186, -CONJ_W, CONJ_W); x.closePath(); x.fillStyle = COL.wash; x.globalAlpha = 0.55; x.fill(); x.globalAlpha = 1;
+  x.setLineDash([8, 4, 2, 4]); x.strokeStyle = COL.red; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(0, 0); x.lineTo(186, 0); x.stroke(); x.restore();
+  // orbits
+  ORB_R.forEach((r, i) => {
+    if (!shown(i)) return;
+    x.save(); x.strokeStyle = a[i].bought ? COL.dim : COL.faint; x.lineWidth = 1;
+    if (!a[i].bought) x.setLineDash([5, 5]);
+    x.beginPath(); x.arc(cxo, cyo, r, 0, Math.PI * 2); x.stroke(); x.restore();
+  });
+  // arms and planets
+  x.font = '11px "Courier Prime", "Courier New", monospace'; x.textAlign = 'left'; x.textBaseline = 'middle';
+  ORB_R.forEach((r, i) => {
+    if (!a[i].bought) return;
+    const ang = armAngle(S, i) - Math.PI / 2, px = cxo + Math.cos(ang) * r, py = cyo + Math.sin(ang) * r;
+    const hot = lit.has(i) || (i === 0 && lit.size);
+    x.strokeStyle = hot ? COL.red : COL.ink; x.lineWidth = i === 0 ? 2 : 1.2;
+    x.beginPath(); x.moveTo(cxo, cyo); x.lineTo(px, py); x.stroke();
+    x.beginPath(); x.arc(px, py, PLANET_R[i], 0, Math.PI * 2); x.fillStyle = hot ? COL.red : COL.brass; x.fill(); x.strokeStyle = COL.ink; x.lineWidth = 1; x.stroke();
+    if (i === 5) { x.beginPath(); x.ellipse(px, py, PLANET_R[i] + 6, 3, -0.4, 0, Math.PI * 2); x.stroke(); }
+    x.fillStyle = hot ? COL.red : COL.dim; x.fillText(ORRERY_NAMES[i].toUpperCase(), px + PLANET_R[i] + 5, py - PLANET_R[i] - 2);
+  });
+  // the sun
+  x.beginPath(); x.arc(cxo, cyo, 13, 0, Math.PI * 2); x.fillStyle = COL.brass; x.fill(); x.strokeStyle = COL.ink; x.lineWidth = 1.5; x.stroke();
+  for (let k = 0; k < 12; k++) { const t = k * Math.PI / 6; x.beginPath(); x.moveTo(cxo + Math.cos(t) * 16, cyo + Math.sin(t) * 16); x.lineTo(cxo + Math.cos(t) * 21, cyo + Math.sin(t) * 21); x.stroke(); }
+}
+const CONJ_W = 0.26;
+
 // ---------- the master's cases ----------
 const lockAnim = {};
 function buildCase(id, box) {
@@ -940,12 +1037,105 @@ function updateCountCase(box) {
   setDis(hb, !avail || st.solved || S.chimes < hintCost); hb.hidden = st.solved;
 }
 
+// ---------- case 4: compound ratios ----------
+const RATIO_NAMES = ['Earth wheel', 'Follower', 'Driver', 'Moon wheel'];
+function buildRatioCase(box) {
+  box.innerHTML = `<p class="clue">${LOCKS.case4.clue}</p>
+    <canvas class="train" width="360" height="300" aria-label="Two pairs of wheels: Earth's arbor drives a follower, which shares an arbor with a driver that turns the Moon"></canvas>
+    <div class="dials" style="grid-template-columns: repeat(4, minmax(0, 1fr))"></div>
+    <p class="hint" data-k="status"></p>
+    <p class="sealed" hidden></p>
+    <div class="row"><span class="hint" data-k="moves"></span><button class="ghost" data-k="hint">Ask Tock for a hint <span class="c">${hintCost} chime</span></button></div>`;
+  const ctl = box.querySelector('.dials');
+  RATIO_NAMES.forEach((nm, i) => {
+    const el = document.createElement('div'); el.className = 'dial-ctl';
+    el.innerHTML = `<span>${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Smaller ${nm.toLowerCase()}">‹</button><button class="ghost" data-dir="1" aria-label="Larger ${nm.toLowerCase()}">›</button></span><span data-k="size">empty</span>`;
+    el.querySelectorAll('button').forEach(b => b.onclick = () => cycleRatio(i, +b.dataset.dir));
+    ctl.appendChild(el);
+  });
+  box.querySelector('[data-k=hint]').onclick = () => {
+    const st = ratioState(S); if (S.chimes < hintCost || st.solved) return;
+    const h = ratioHint(S); if (!h) return;
+    S.chimes -= hintCost;
+    box.querySelector('[data-k=moves]').textContent = `Tock says: the ${RATIO_NAMES[h.slot].toLowerCase()} wants ${h.n} teeth.`;
+    refresh();
+  };
+}
+function cycleRatio(i, dir) {
+  const st = ratioState(S), opts = [null, ...RATIO_TRAY];
+  let k = opts.indexOf(st.slots[i]);
+  // skip wheels already used in another place
+  for (let n = 0; n < opts.length; n++) {
+    k = (k + dir + opts.length) % opts.length;
+    if (opts[k] === null || !st.slots.some((v, j) => j !== i && v === opts[k])) break;
+  }
+  if (ratioSet(S, i, opts[k])) { if (st.solved) onCaseOpened('case4'); refresh(); save(); }
+}
+let ratioPhase = 0;
+function drawRatioCase(box, dt) {
+  const c = box.querySelector('canvas'); if (!c) return;
+  const st = ratioState(S), sl = st.slots, full = sl.every(Boolean);
+  if (full) ratioPhase += dt * 0.15;
+  const key = sl.join() + colorsVersion;
+  if (!full && c._key === key) return; c._key = key;
+  const x = c.getContext('2d'), add = 0.32 * 2 * Math.PI * 0.5, ded = 0.42 * 2 * Math.PI * 0.5;
+  x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
+  const k = 0.95, ax = 190, top = 82, bot = 222;
+  const r = n => (n || 14) * k;
+  const pos = [
+    { x: ax - r(sl[0]) - r(sl[1]), y: top }, { x: ax, y: top },
+    { x: ax, y: bot }, { x: ax + r(sl[2]) + r(sl[3]), y: bot },
+  ];
+  // the shared arbor
+  x.save(); x.setLineDash([10, 3, 2, 3]); x.strokeStyle = COL.dim; x.beginPath(); x.moveTo(ax, top - 70); x.lineTo(ax, bot + 70); x.stroke(); x.restore();
+  // angles: A turns with Earth, B against it, C with B, D against C
+  const aA = ratioPhase, aB = full ? -aA * sl[0] / sl[1] + Math.PI / sl[1] : 0, aC = aB, aD = full ? -aC * sl[2] / sl[3] + Math.PI / sl[3] : 0;
+  const ang = [aA, aB, aC, aD];
+  sl.forEach((n, i) => {
+    const p = pos[i];
+    x.save(); x.translate(p.x, p.y);
+    if (!n) {
+      x.setLineDash([3, 4]); x.strokeStyle = COL.dim; x.beginPath(); x.arc(0, 0, 14, 0, Math.PI * 2); x.stroke();
+      x.setLineDash([]); x.beginPath(); x.arc(0, 0, 3, 0, Math.PI * 2); x.fillStyle = COL.ink; x.fill();
+    } else {
+      x.scale(k, k);
+      gearPath(x, n, n, ang[i], add, ded);
+      x.fillStyle = COL.paper; x.fill();
+      if (st.solved) { x.fillStyle = COL.wash; x.fill(); }
+      x.lineWidth = 1.2 / k; x.strokeStyle = COL.ink; x.stroke();
+      x.beginPath(); x.arc(0, 0, Math.max(3, n * 0.18), 0, Math.PI * 2); x.lineWidth = 1 / k; x.stroke();
+    }
+    x.restore();
+  });
+  x.font = '12px "Courier Prime", "Courier New", monospace'; x.textAlign = 'center'; x.fillStyle = COL.red;
+  x.fillText('EARTH', pos[0].x, top - r(sl[0]) - 10);
+  x.fillText('MOON', pos[3].x, bot + r(sl[3]) + 18);
+  x.fillStyle = COL.dim; x.textAlign = 'left'; x.fillText('SHARED', ax + 8, 148); x.fillText('ARBOR', ax + 8, 162);
+}
+function updateRatioCase(box) {
+  const st = ratioState(S), avail = orreryDone(S), q = ratioOf(st.slots);
+  box.querySelectorAll('.dial-ctl').forEach((el, i) => {
+    el.querySelectorAll('button').forEach(b => setDis(b, !avail || st.solved));
+    setText(el.querySelector('[data-k=size]'), st.slots[i] ? `${st.slots[i]} teeth` : 'empty');
+  });
+  const turns = q === null ? '' : (Math.round(q * 100) / 100).toString();
+  setText(box.querySelector('[data-k=status]'), st.solved ? 'Twelve moons to the year. The case swings open.'
+    : q === null ? `Fill all four places. The tray holds ${RATIO_TRAY.join(', ')} teeth.`
+    : `The Moon goes round ${turns} time${q === 1 ? '' : 's'} a year.`);
+  const sealed = box.querySelector('.sealed');
+  sealed.hidden = avail && !st.solved;
+  setText(sealed, st.solved ? 'The case is open. Its page is in your journal.' : 'Complete the orrery first.');
+  const hb = box.querySelector('[data-k=hint]');
+  setDis(hb, !avail || st.solved || S.chimes < hintCost); hb.hidden = st.solved;
+}
+
 function onCaseOpened(id) {
   const page = PAGES[LOCKS[id].page];
   toast(`The case clicks open: ${page.title.toLowerCase()}.`);
   renderJournal();
   if (id === 'case1') setTimeout(() => toast('Drawing No. 2 was under the page. The Clocktower is open.'), 2700);
   if (id === 'case2') setTimeout(() => toast('Drawing No. 3 was under the page. The City is open.'), 2700);
+  if (id === 'case3') setTimeout(() => toast('Drawing No. 4 was under the page. The Orrery is open.'), 2700);
 }
 
 // ---------- journal ----------
@@ -956,9 +1146,9 @@ function renderJournal() {
     el.innerHTML = `<h3>${p.title}</h3>` + p.text.map((t, k) => `<p class="${k === p.text.length - 1 ? 'sig' : ''}">${t}</p>`).join('');
     box.appendChild(el);
   }
-  if (S.locks.case3 && S.locks.case3.solved) {
+  if (S.locks.case4 && S.locks.case4.solved) {
     const el = document.createElement('p'); el.className = 'hint';
-    el.textContent = 'Drawing No. 4, the orrery, arrives in the next update.';
+    el.textContent = 'Drawing No. 5, the Great Clock, arrives in the next update.';
     box.appendChild(el);
   }
 }
@@ -992,10 +1182,11 @@ function updateRow(row, item, vis, shown, cost, have, multText, unit) {
   setText(b2.querySelector('.c'), fmt(cost * (10 - set)) + unit); setDis(b2, !vis || have < cost || !isFinite(cost));
 }
 
-let gearRows = [], towerRows = [], cityRows = [];
+let gearRows = [], towerRows = [], cityRows = [], armRows = [];
 function buyAll() {
   if (view === 'tower') { for (let i = 3; i >= 0; i--) if (buyTower(S, i, true)) tflash[i] = 1; }
   else if (view === 'city') { for (let i = 5; i >= 0; i--) buyDistrict(S, i, true); }
+  else if (view === 'orrery') { for (let i = 5; i >= 0; i--) buyArm(S, i, true); }
   else for (let i = 7; i >= 0; i--) if (buyGear(S, i, true)) flash[i] = 1;
   refresh();
 }
@@ -1106,12 +1297,55 @@ function refreshCity() {
   const n = noteFor(NOTES3); if ($('note3').textContent !== n) setText($('note3'), n);
 }
 
+function renderOrreryShop() {
+  const box = $('orreryShop'); box.innerHTML = '';
+  const sw = (on, id, set) => {
+    const l = document.createElement('label'); l.className = 'switch';
+    l.innerHTML = `<input type="checkbox" id="${id}" ${on ? 'checked' : ''}> working`;
+    l.querySelector('input').onchange = e => set(e.target.checked); return l;
+  };
+  upgradeRow(box, "The lamplighters' guild", 'Wires new dials in every district of the city for you.', S.lamplighters ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${fmt(lamplightersCost)} years</span>`, S.lamplighters || S.orrery.years < lamplightersCost, () => buyLamplighters(S), S.lamplighters ? sw(S.lamplightersOn, 'auto-lamp', v => S.lamplightersOn = v) : null);
+  upgradeRow(box, 'Observatory camera', 'Records every conjunction for you, day and night.', S.observer ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${fmt(observerCost)} years</span>`, S.observer || S.orrery.years < observerCost, () => buyObserver(S), S.observer ? sw(S.observerOn, 'auto-obs', v => S.observerOn = v) : null);
+}
+let lastOrreryKey = '';
+const mmss = sec => { sec = Math.ceil(sec); return sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s` : `${sec} s`; };
+function refreshOrrery() {
+  armRows.forEach((row, i) => {
+    const a = S.orrery.arms[i], vis = armVisible(S, i);
+    updateRow(row, a, vis, vis || (i > 0 && armVisible(S, i - 1)), armCost(S, i), S.orrery.years,
+      vis ? `${fmt(a.amount)} turning · ×${fmt(armMult(S, i))}` : `build ${ORRERY_NAMES[i - 1]} first`, ' yr');
+  });
+  const fresh = newInLine(S), lit = inLine(S), recs = S.orrery.records;
+  setText($('conjLbl'), `${fmt(recs)} recorded`);
+  setHTML($('conjHint'), `When a planet crosses Earth's red line, observe it. Each one recorded makes Earth's arm faster: now <b>×${fmt(recordMult(S))}</b>. Two planets at once count four.`);
+  setDis($('observeBtn'), !fresh.length);
+  setText($('observeBtn'), fresh.length ? `Observe: ${fresh.map(i => ORRERY_NAMES[i]).join(' and ')} in line` : lit.length ? 'Recorded' : 'Observe the conjunction');
+  const built = [1, 2, 3, 4, 5].filter(i => S.orrery.arms[i].bought);
+  if (!built.length) setText($('conjNext'), 'Build Mercury to see your first conjunction.');
+  else {
+    const nx = built.filter(i => !lit.includes(i)).map(i => [i, nextConjunction(S, i)]).sort((p, q) => p[1] - q[1])[0];
+    setText($('conjNext'), S.observer && S.observerOn ? 'The camera is recording.' : nx ? `Next: ${ORRERY_NAMES[nx[0]]} in ${mmss(nx[1])}.` : '');
+  }
+  const ok = [S.lamplighters, S.observer, S.orrery.years >= lamplightersCost, S.orrery.years >= observerCost].join('|');
+  if (ok !== lastOrreryKey) { lastOrreryKey = ok; renderOrreryShop(); }
+  setText($('orreryGoalLbl'), orreryDone(S) ? 'complete' : `${fmt(S.orrery.years)} / ${fmt(TUNE.orreryGoal)}`);
+  setHTML($('orreryGoalHint'), `At <b>${fmt(TUNE.orreryGoal)} years</b> the orrery is complete. Years also make every district in the city run <b>×${fmt(starMult(S))}</b> faster.`);
+  setWidth($('orreryGoalMeter'), orreryDone(S) ? 100 : Math.min(100, Math.log10(Math.max(1, S.orrery.years)) / Math.log10(TUNE.orreryGoal) * 100));
+  if (orreryDone(S)) reveal('case4Box');
+  setText($('case4Lbl'), S.locks.case4?.solved ? 'opened' : 'in the orrery\'s base');
+  updateRatioCase($('case4'));
+  const n = noteFor(NOTES4); if ($('note4').textContent !== n) setText($('note4'), n);
+}
+
 // ---------- refresh ----------
 let lastShopKey = '', lastBenchKey = '', lastTowerKey = '', lastJournalN = -1;
 function reveal(id) { const el = $(id); if (el.hidden) { el.hidden = false; const p = el.querySelector('.panel, .case'); if (p) p.classList.add('fresh'); } }
 function refresh() {
   // readout
-  if (view === 'city') {
+  if (view === 'orrery') {
+    setTextP('readLbl', 'Years'); setTextP('readBig', fmt(S.orrery.years));
+    setTextP('readRate', fmt(S.orrery.arms[0].amount * (S.orrery.arms[0].amount > 0 ? armMult(S, 0) * TUNE.orrerySpeed : 0)) + ' / sec');
+  } else if (view === 'city') {
     setTextP('readLbl', 'Accord'); setTextP('readBig', fmt(S.city.accord));
     setTextP('readRate', fmt(S.city.districts[0].amount * (S.city.districts[0].amount > 0 ? cityMult(S, 0) * TUNE.citySpeed : 0)) + ' / sec');
   } else if (view === 'tower') {
@@ -1121,12 +1355,13 @@ function refresh() {
     setTextP('readLbl', 'Ticks'); setTextP('readBig', fmt(S.ticks));
     setTextP('readRate', fmt(S.gears[0].amount * gearMult(S, 0) * TUNE.speed) + ' / sec');
   }
-  setTextP('drawingNo', view === 'city' ? 'Drawing No. 3' : view === 'tower' ? 'Drawing No. 2' : view === 'journal' ? 'Journal' : 'Drawing No. 1');
+  setTextP('drawingNo', view === 'orrery' ? 'Drawing No. 4' : view === 'city' ? 'Drawing No. 3' : view === 'tower' ? 'Drawing No. 2' : view === 'journal' ? 'Journal' : 'Drawing No. 1');
 
   // nav
   const tOpen = towerOpen(S);
   $('nav').hidden = !(tOpen || S.journal.length);
   $('tabCity').hidden = !cityOpen(S);
+  $('tabOrrery').hidden = !orreryOpen(S);
   $('tabTower').hidden = !tOpen;
   $('tabJournal').hidden = !S.journal.length;
   setTextP('tabJournal', `Journal (${S.journal.length})`);
@@ -1134,6 +1369,7 @@ function refresh() {
   if (view === 'clock') refreshClock();
   if (view === 'tower') refreshTower();
   if (view === 'city') refreshCity();
+  if (view === 'orrery') refreshOrrery();
   if (S.journal.length !== lastJournalN) { lastJournalN = S.journal.length; renderJournal(); }
 }
 function refreshClock() {
@@ -1204,15 +1440,16 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = fals
 // ---------- views ----------
 function show(v) {
   view = v;
-  $('viewClock').hidden = v !== 'clock'; $('viewTower').hidden = v !== 'tower'; $('viewCity').hidden = v !== 'city'; $('viewJournal').hidden = v !== 'journal';
-  for (const [id, name] of [['tabClock', 'clock'], ['tabTower', 'tower'], ['tabCity', 'city'], ['tabJournal', 'journal']]) $(id).setAttribute('aria-selected', String(v === name));
-  lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = '';
+  $('viewClock').hidden = v !== 'clock'; $('viewTower').hidden = v !== 'tower'; $('viewCity').hidden = v !== 'city'; $('viewOrrery').hidden = v !== 'orrery'; $('viewJournal').hidden = v !== 'journal';
+  for (const [id, name] of [['tabClock', 'clock'], ['tabTower', 'tower'], ['tabCity', 'city'], ['tabOrrery', 'orrery'], ['tabJournal', 'journal']]) $(id).setAttribute('aria-selected', String(v === name));
+  lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = lastOrreryKey = '';
   refresh();
 }
 $('tabClock').onclick = () => show('clock');
 $('tabTower').onclick = () => show('tower');
 $('tabJournal').onclick = () => show('journal');
 $('tabCity').onclick = () => show('city');
+$('tabOrrery').onclick = () => show('orrery');
 
 // ---------- save / load ----------
 function save() { try { S.savedAt = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
@@ -1251,6 +1488,7 @@ $('chimeBtn').onclick = () => {
     $('benchBox').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
   }, reduce ? 0 : 1100);
 };
+$('observeBtn').onclick = () => { const g = observe(S); if (g) { toast(g > 1 ? `A double conjunction: recorded as ${g}.` : 'Conjunction recorded in the astronomer\'s book.'); refresh(); } };
 $('signalBtn').onclick = () => { if (sendSignal(S)) { toast('The signal goes out. Every dial in the city clicks into step.'); refresh(); } };
 $('strikeBtn').onclick = () => { if (strike(S)) { bellSwing = 6; toast('The great bell strikes. Something rattles behind it.'); refresh(); save(); } };
 function bindReset() {
@@ -1260,9 +1498,9 @@ function bindReset() {
     w.innerHTML = '<span>Erase all progress?</span> <button id="resetYes">Erase</button> <button class="ghost" id="resetNo">Keep</button>';
     $('resetYes').onclick = () => {
       S = newGame(); try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-      for (const k of ['windBox', 'shopBox', 'chimeBox', 'benchBox', 'case1Box', 'case2Box', 'case3Box']) $(k).hidden = true;
+      for (const k of ['windBox', 'shopBox', 'chimeBox', 'benchBox', 'case1Box', 'case2Box', 'case3Box', 'case4Box']) $(k).hidden = true;
       for (const k in lockAnim) delete lockAnim[k];
-      lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = ''; lastJournalN = -1; bindReset(); show('clock');
+      lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = lastOrreryKey = ''; lastJournalN = -1; bindReset(); show('clock');
     };
     $('resetNo').onclick = bindReset;
   };
@@ -1281,6 +1519,9 @@ function frame(now) {
     drawMachine(dt);
     if (slow) document.querySelectorAll('#bench canvas').forEach((c, k) => { if (k < S.clocks) drawFace(c, faceT + k * 7, k); });
     if (!$('case1Box').hidden) drawCase('case1', $('case1'), dt);
+  } else if (view === 'orrery') {
+    if (slow) drawOrrery();
+    if (!$('case4Box').hidden) drawRatioCase($('case4'), dt);
   } else if (view === 'city') {
     if (slow) drawCity();
     if (!$('case3Box').hidden) drawCountCase($('case3'));
@@ -1299,7 +1540,8 @@ function start(data) {
   gearRows = buildRows($('gears'), GEAR_NAMES, i => { if (buyGear(S, i, false)) flash[i] = 1; }, i => { if (buySet(S, i)) flash[i] = 1; });
   towerRows = buildRows($('towerWheels'), TOWER_NAMES, i => { if (buyTower(S, i, false)) tflash[i] = 1; }, buyTowerSet);
   cityRows = buildRows($('districts'), CITY_NAMES, i => buyDistrict(S, i, false), i => { let n = 0; do { if (!buyDistrict(S, i, false)) break; n++; } while (S.city.districts[i].bought % 10 !== 0); });
-  buildCase('case1', $('case1')); buildTrainCase($('case2')); buildCountCase($('case3'));
+  armRows = buildRows($('arms'), ORRERY_NAMES, i => buyArm(S, i, false), i => { do { if (!buyArm(S, i, false)) break; } while (S.orrery.arms[i].bought % 10 !== 0); });
+  buildCase('case1', $('case1')); buildTrainCase($('case2')); buildCountCase($('case3')); buildRatioCase($('case4'));
   bindReset();
   if (S.savedAt && !(data && data.S)) catchUp((Date.now() - S.savedAt) / 1000);
   show(data && data.view ? data.view : 'clock');
