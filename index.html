@@ -8,31 +8,45 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,400;0,600;1,400&family=Courier+Prime:wght@400;700&family=Cedarville+Cursive&display=swap">
 <style>
-/* Layout: one sheet of drafting linen, c. 1905. The inked gear-train drawing (with its title block) sits on top; the workshop ledger stacks below in two columns that fold to one on phones. Single deliberate paper-and-ink look. */
+/* Layout: one sheet of drafting linen, c. 1905 (or the same sheet by gaslight).
+   The inked drawing of the current layer sits on top with its title block; the
+   workshop ledger stacks below in two columns that fold to one on phones. */
 :root {
-  color-scheme: light;
   --paper: #ece2c9;
-  --paper-deep: #e2d5b6;
   --rule: rgba(92, 64, 34, 0.07);
   --ink: #3a2816;
-  --ink-dim: rgba(58, 40, 22, 0.66);
+  --ink-dim: rgba(58, 40, 22, 0.68);
   --ink-faint: rgba(58, 40, 22, 0.28);
   --red: #9e2f22;
   --brass: #c49a45;
   --brass-hi: #d9b766;
+  --on-brass: #2b1c0e;
   --wash: rgba(196, 154, 69, 0.32);
   --f-display: "IM Fell English SC", "IM Fell English", Georgia, serif;
   --f-body: "Spectral", Georgia, "Times New Roman", serif;
   --f-num: "Courier Prime", "Courier New", Courier, monospace;
   --f-hand: "Cedarville Cursive", "Segoe Script", "Apple Chancery", cursive;
 }
+/* Lamplight: the same drawing on dark oiled board, inked in chalk and vermilion. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1e1812; --rule: rgba(232, 214, 180, 0.045); --ink: #eadfc4; --ink-dim: rgba(234, 223, 196, 0.68);
+    --ink-faint: rgba(234, 223, 196, 0.24); --red: #e48a6c; --brass: #c99a45; --brass-hi: #dfba64; --on-brass: #22170b;
+    --wash: rgba(201, 154, 69, 0.22); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1e1812; --rule: rgba(232, 214, 180, 0.045); --ink: #eadfc4; --ink-dim: rgba(234, 223, 196, 0.68);
+  --ink-faint: rgba(234, 223, 196, 0.24); --red: #e48a6c; --brass: #c99a45; --brass-hi: #dfba64; --on-brass: #22170b;
+  --wash: rgba(201, 154, 69, 0.22); color-scheme: dark;
+}
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+html { background: var(--paper); }
 body {
+  margin: 0;
   background-color: var(--paper);
-  background-image:
-    linear-gradient(var(--rule) 1px, transparent 1px),
-    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px);
   background-size: 20px 20px;
   color: var(--ink);
   font: 16px/1.45 var(--f-body);
@@ -46,19 +60,32 @@ h1 { font: 400 clamp(36px, 6.4vw, 60px)/0.95 var(--f-display); letter-spacing: 0
 .readout .big { font: 700 clamp(28px, 5vw, 40px)/1 var(--f-num); color: var(--red); font-variant-numeric: tabular-nums; }
 .readout .rate { font: 400 13px var(--f-num); color: var(--ink-dim); }
 
+nav { display: flex; flex-wrap: wrap; gap: 6px; }
+nav button { background: transparent; color: var(--ink); border: 1px solid var(--ink-faint); box-shadow: none; font: 400 17px/1 var(--f-display); padding: 8px 14px; }
+nav button[aria-selected="true"], nav button[aria-selected="true"]:hover:not(:disabled) { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+nav button:hover:not(:disabled):not([aria-selected="true"]) { background: var(--wash); }
+
 .stage { position: relative; border: 1.5px solid var(--ink); outline: 1px solid var(--ink-faint); outline-offset: 4px; background: var(--paper); transform-origin: 50% 50%; transition: transform 1.1s cubic-bezier(.6,0,.3,1), opacity 1.1s; margin: 5px; }
 .stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 1000 / 380; max-width: 100%; }
 .stage.zoom { transform: scale(0.12) translateY(260%); opacity: 0; }
-.note { position: absolute; left: 16px; top: 36px; max-width: 44%; font: 400 clamp(15px, 2vw, 19px)/1.35 var(--f-hand); color: var(--red); transform: rotate(-1.5deg); pointer-events: none; }
+.note { position: absolute; left: 16px; top: 36px; max-width: 40%; font: 400 clamp(15px, 2vw, 19px)/1.35 var(--f-hand); color: var(--red); transform: rotate(-1.5deg); pointer-events: none; }
 .stage .tag { position: absolute; left: 14px; top: 10px; }
 .titleblock { position: absolute; right: 0; bottom: 0; display: grid; grid-template-columns: auto auto; font: 400 10px/1.2 var(--f-num); letter-spacing: 0.06em; text-transform: uppercase; border-left: 1.5px solid var(--ink); border-top: 1.5px solid var(--ink); background: var(--paper); }
 .titleblock > div { padding: 4px 8px; border-right: 1px solid var(--ink-faint); border-bottom: 1px solid var(--ink-faint); }
 .titleblock .t { grid-column: span 2; font: 400 15px/1.1 var(--f-display); letter-spacing: 0.02em; text-transform: none; }
 .titleblock b { font-weight: 700; }
 
+.view { display: grid; gap: 18px; }
 .cols { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 22px; align-items: start; }
-@media (max-width: 760px) { .cols { grid-template-columns: minmax(0, 1fr); } .note { position: static; max-width: none; transform: none; padding: 0 12px 10px; } .stage { display: flex; flex-direction: column; } .stage .tag { position: static; order: -1; padding: 10px 12px 0; } .titleblock { display: none; } }
-section { display: grid; gap: 10px; min-width: 0; }
+@media (max-width: 760px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .stage { display: flex; flex-direction: column; }
+  .stage .tag { position: static; order: -1; padding: 10px 12px 0; }
+  .note { position: static; max-width: none; transform: none; padding: 0 12px 10px; }
+  .titleblock { display: none; }
+}
+section { display: grid; gap: 10px; min-width: 0; align-content: start; }
+.col { display: grid; gap: 20px; min-width: 0; align-content: start; }
 h2 { font: 400 26px/1 var(--f-display); margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; border-bottom: 1px solid var(--ink); padding-bottom: 4px; }
 h2 small { font: italic 400 14px var(--f-body); color: var(--ink-dim); text-align: right; }
 .panel { padding: 4px 0; display: grid; gap: 10px; }
@@ -76,11 +103,12 @@ h2 small { font: italic 400 14px var(--f-body); color: var(--ink-dim); text-alig
 .gear.locked { opacity: 0.55; }
 .gear.locked .nm::after { content: " (not yet drawn)"; font-weight: 400; font-style: italic; color: var(--ink-dim); }
 
-button { font: 600 14px/1.1 var(--f-body); color: var(--ink); background: var(--brass); border: 1px solid var(--ink); border-radius: 2px; padding: 7px 12px; cursor: pointer; min-height: 36px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: inset 0 1px 0 var(--brass-hi); }
+button { font: 600 14px/1.1 var(--f-body); color: var(--on-brass); background: var(--brass); border: 1px solid var(--ink); border-radius: 2px; padding: 7px 12px; cursor: pointer; min-height: 36px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: inset 0 1px 0 var(--brass-hi); }
 button .c { font: 400 11px var(--f-num); }
 button:hover:not(:disabled) { background: var(--brass-hi); }
 button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
-button.ghost { background: transparent; box-shadow: none; }
+button.ghost { background: transparent; color: var(--ink); box-shadow: none; }
+button.ghost:hover:not(:disabled) { background: var(--wash); }
 button:disabled, button.ghost:disabled { background: transparent; color: var(--ink-dim); border: 1px dashed var(--ink-faint); box-shadow: none; cursor: default; }
 button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
@@ -101,86 +129,179 @@ button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%;
 .clockTile { display: grid; justify-items: center; gap: 4px; font: 400 11px var(--f-num); color: var(--ink-dim); text-align: center; }
 .clockTile canvas { width: 100%; max-width: 64px; height: auto; aspect-ratio: 1; }
 .clockTile.empty { opacity: 0.4; }
-.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; font-weight: 600; max-width: calc(100% - 32px); }
-footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; color: var(--ink-dim); font-size: 14px; border-top: 3px double var(--ink); padding-top: 10px; }
-.confirm { display: inline-flex; gap: 6px; align-items: center; }
+
+/* The master's cases */
+.case { border: 1.5px solid var(--ink); padding: 12px; display: grid; gap: 10px; background: var(--paper); }
+.case .clue { font: 400 18px/1.4 var(--f-hand); color: var(--red); margin: 0; }
+.case canvas { width: 100%; height: auto; aspect-ratio: 520 / 200; max-width: 100%; display: block; }
+.dials { display: grid; gap: 6px; }
+.dial-ctl { display: grid; justify-items: center; gap: 4px; font: 400 11px var(--f-num); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim); text-align: center; }
+.dial-ctl .btns { display: flex; gap: 4px; }
+.dial-ctl button { min-width: 40px; font: 400 18px/1 var(--f-body); padding: 4px 8px; }
+.dial-ctl button.hinted { outline: 2px solid var(--red); outline-offset: 2px; }
+.sealed { font-style: italic; color: var(--ink-dim); margin: 0; }
+
+.journal { display: grid; gap: 22px; max-width: 680px; }
+.page { border: 1px solid var(--ink-faint); padding: 18px 20px; display: grid; gap: 10px; background: var(--paper); }
+.page h3 { font: 400 22px/1.1 var(--f-display); margin: 0; }
+.page p { margin: 0; font: 400 19px/1.45 var(--f-hand); color: var(--ink); }
+.page p.sig { color: var(--red); text-align: right; }
+
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; font-weight: 600; max-width: calc(100% - 32px); z-index: 5; }
+footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; color: var(--ink-dim); font-size: 14px; border-top: 3px double var(--ink); padding-top: 10px; }
+.confirm, .themes { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.themes button { min-height: 30px; padding: 4px 10px; font-size: 13px; }
+.themes button[aria-pressed="true"], .themes button[aria-pressed="true"]:hover:not(:disabled) { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .stage { transition: none; } .panel.fresh { animation: none; } }
 </style>
-
 </head>
 <body>
 <div class="sheet">
   <header>
     <div>
-      <div class="plate">Workshop of the late Master · Drawing No. 1</div>
+      <div class="plate">Workshop of the late Master · <span id="drawingNo">Drawing No. 1</span></div>
       <h1>The Great Clock</h1>
     </div>
     <div class="readout">
-      <div class="plate">Ticks</div>
-      <div class="big" id="ticks">10</div>
-      <div class="rate" id="rate">0 / sec</div>
+      <div class="plate" id="readLbl">Ticks</div>
+      <div class="big" id="readBig">10</div>
+      <div class="rate" id="readRate">0 / sec</div>
     </div>
   </header>
 
-  <div class="stage" id="stage">
-    <canvas id="machine" width="1000" height="380" aria-label="Drawing of the clock's gear train"></canvas>
-    <div class="plate tag" id="stageTag">Gear train</div>
-    <div class="note" id="note"></div>
-    <div class="titleblock" aria-hidden="true">
-      <div class="t">The Great Clock</div>
-      <div>Sheet <b id="tbSheet">1</b> of 5</div><div>Scale full size</div>
-      <div>Drawn: M.</div><div>Traced: Apprentice</div>
+  <nav id="nav" hidden role="tablist" aria-label="Drawings">
+    <button id="tabClock" role="tab" aria-selected="true">The Clock</button>
+    <button id="tabTower" role="tab" aria-selected="false" hidden>The Clocktower</button>
+    <button id="tabJournal" role="tab" aria-selected="false" hidden>Journal</button>
+  </nav>
+
+  <!-- ===== Drawing No. 1: the clock ===== -->
+  <div class="view" id="viewClock">
+    <div class="stage" id="stage">
+      <canvas id="machine" width="1000" height="380" aria-label="Drawing of the clock's gear train"></canvas>
+      <div class="plate tag" id="stageTag">Gear train</div>
+      <div class="note" id="note"></div>
+      <div class="titleblock" aria-hidden="true">
+        <div class="t">The Great Clock</div>
+        <div>Sheet <b>1</b> of 5</div><div>Scale full size</div>
+        <div>Drawn: M.</div><div>Traced: Apprentice</div>
+      </div>
+    </div>
+
+    <div class="cols">
+      <section>
+        <h2>Gears <small>each gear turns the one before it</small></h2>
+        <div class="panel" id="gears"></div>
+        <div class="row">
+          <p class="hint">Every 10 of a gear sets a jewel bearing, which doubles its speed. Press <b>M</b> to buy all you can.</p>
+          <button class="ghost" id="buyAll">Buy all</button>
+        </div>
+      </section>
+
+      <div class="col">
+        <section id="windBox" hidden>
+          <h2>Mainspring <small id="tensionLbl"></small></h2>
+          <div class="panel">
+            <p class="hint" id="windHint"></p>
+            <div class="meter"><div id="windMeter"></div></div>
+            <button class="big" id="windBtn">Wind the spring</button>
+          </div>
+        </section>
+
+        <section id="shopBox" hidden>
+          <h2>Spring shop <small>spend tension</small></h2>
+          <div class="panel" id="shop"></div>
+        </section>
+
+        <section id="chimeBox" hidden>
+          <h2>Finish the clock <small id="chimeLbl"></small></h2>
+          <div class="panel">
+            <p class="hint" id="chimeHint"></p>
+            <div class="meter"><div id="chimeMeter"></div></div>
+            <button class="big" id="chimeBtn">Finish the clock</button>
+          </div>
+        </section>
+
+        <section id="benchBox" hidden>
+          <h2>Workbench <small id="chimesLbl"></small></h2>
+          <div class="panel">
+            <div class="bench" id="bench"></div>
+            <p class="hint">Each finished clock adds +1× to every gear. Each one is larger than the last.</p>
+            <div id="benchShop"></div>
+          </div>
+        </section>
+
+        <section id="case1Box" hidden>
+          <h2>The master's case <small id="case1Lbl"></small></h2>
+          <div class="case" id="case1"></div>
+        </section>
+      </div>
     </div>
   </div>
 
-  <div class="cols">
+  <!-- ===== Drawing No. 2: the clocktower ===== -->
+  <div class="view" id="viewTower" hidden>
+    <div class="stage" id="stage2">
+      <canvas id="tower" width="1000" height="380" aria-label="Drawing of the clocktower and its movement"></canvas>
+      <div class="plate tag">Clocktower · elevation and movement</div>
+      <div class="note" id="note2"></div>
+      <div class="titleblock" aria-hidden="true">
+        <div class="t">The Great Clock</div>
+        <div>Sheet <b>2</b> of 5</div><div>Scale 1 : 48</div>
+        <div>Drawn: M.</div><div>Traced: Apprentice</div>
+      </div>
+    </div>
+
+    <div class="cols">
+      <section>
+        <h2>Turret wheels <small>bought with chimes</small></h2>
+        <div class="panel" id="towerWheels"></div>
+        <p class="hint">The arbor makes <b>hours</b>. Every wheel turns the one before it, the same as in your clocks. Every finished clock makes the tower turn 10% faster.</p>
+      </section>
+
+      <div class="col">
+        <section>
+          <h2>The tower <small id="hoursLbl"></small></h2>
+          <div class="panel">
+            <p class="hint" id="hoursHint"></p>
+            <div id="towerShop"></div>
+          </div>
+        </section>
+
+        <section id="strikeBox">
+          <h2>Strike the hour <small id="strikeLbl"></small></h2>
+          <div class="panel">
+            <p class="hint">At <b>1e9 hours</b> the great bell can strike for the first time, and the town will hear your clock.</p>
+            <div class="meter"><div id="strikeMeter"></div></div>
+            <button class="big" id="strikeBtn">Strike the hour</button>
+          </div>
+        </section>
+
+        <section id="case2Box" hidden>
+          <h2>The second case <small id="case2Lbl"></small></h2>
+          <div class="case" id="case2"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Journal ===== -->
+  <div class="view" id="viewJournal" hidden>
     <section>
-      <h2>Gears <small id="gearHint">each gear turns the one before it</small></h2>
-      <div class="panel" id="gears"></div>
-      <div class="row">
-        <p class="hint">Every 10 of a gear sets a jewel bearing, which doubles its speed. Press <b>M</b> to buy all you can.</p>
-        <button class="ghost" id="buyAll">Buy all</button>
-      </div>
-    </section>
-
-    <section>
-      <div id="windBox" hidden>
-        <h2>Mainspring <small id="tensionLbl"></small></h2>
-        <div class="panel" id="windPanel">
-          <p class="hint" id="windHint"></p>
-          <div class="meter"><div id="windMeter"></div></div>
-          <button class="big" id="windBtn">Wind the spring</button>
-        </div>
-      </div>
-
-      <div id="shopBox" hidden>
-        <h2>Spring shop <small>spend tension</small></h2>
-        <div class="panel" id="shop"></div>
-      </div>
-
-      <div id="chimeBox" hidden>
-        <h2>Finish the clock <small id="chimeLbl"></small></h2>
-        <div class="panel" id="chimePanel">
-          <p class="hint">Reach <b>1e45 ticks</b> to finish this clock. It goes on the workbench and keeps running by itself. Your automatons come with you.</p>
-          <div class="meter"><div id="chimeMeter"></div></div>
-          <button class="big" id="chimeBtn">Finish the clock</button>
-        </div>
-      </div>
-
-      <div id="benchBox" hidden>
-        <h2>Workbench <small id="chimesLbl"></small></h2>
-        <div class="panel">
-          <div class="bench" id="bench"></div>
-          <p class="hint">Each finished clock adds +1× to every gear. Five clocks will be enough to start the clocktower.</p>
-          <div id="benchShop"></div>
-        </div>
-      </div>
+      <h2>The master's journal <small>pages found in his cases</small></h2>
+      <div class="journal" id="journal"></div>
     </section>
   </div>
 
   <footer>
-    <span id="saveLbl">Progress saves in this browser.</span>
-    <span class="confirm" id="resetWrap"><button class="ghost" id="resetBtn">Start over</button></span>
+    <span>Progress saves in this browser.</span>
+    <span class="themes" role="group" aria-label="Drawing style">
+      <span>Drawing:</span>
+      <button class="ghost" data-theme-set="light">Linen</button>
+      <button class="ghost" data-theme-set="dark">Lamplight</button>
+      <button class="ghost" data-theme-set="system">Match device</button>
+    </span>
+    <span class="confirm" id="resetWrap"></span>
   </footer>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -189,8 +310,8 @@ footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-betwee
 <script>
 (() => {
 const $ = id => document.getElementById(id);
-const SAVE_KEY = 'great-clock-v1';
-let S;
+const SAVE_KEY = 'great-clock-v1', THEME_KEY = 'great-clock-theme';
+let S, view = 'clock';
 
 // ---------- formatting ----------
 function fmt(x) {
@@ -204,48 +325,66 @@ function fmt(x) {
 // ---------- the master's margin notes ----------
 const NOTES = [
   [s => true, 'Every gear turns the one before it. Start small. —M.'],
-  [s => s.gears[1].bought > 0, 'The second wheel turns the first. You see it now. —M.'],
+  [s => s.gears[1].bought > 0, 'The second wheel turns the first. You see it now.'],
   [s => s.gears[0].bought >= 10, 'Ten of a kind earns a jewel bearing. Rubies run smoother.'],
   [s => s.runTicks >= 1e7 || s.winds > 0, 'When the train runs long enough, wind the spring.'],
   [s => s.winds > 0, 'Winding starts the train again, but the spring remembers.'],
   [s => s.autos.pip, 'Pip will mind the small gears. Pip likes to hum.'],
   [s => s.winds >= 3, 'Every great clock was once a pocket watch.'],
   [s => s.runTicks >= 1e30, 'Nearly there. Listen for the chime.'],
-  [s => s.clocks.length > 0, 'One finished. It will keep time without you. Build another.'],
-  [s => s.clocks.length >= 3, 'The tower needs five. I left the plans in the drawer.'],
+  [s => s.clocks > 0, 'One finished. It keeps time without you now. The drawer is unlocked.'],
+  [s => s.clocks >= 3, 'The case in the drawer wants five clocks on the bench.'],
+  [s => s.clocks >= TOWER_AT && !towerOpen(s), 'The dials push each other. Mind the neighbours.'],
+  [s => towerOpen(s), 'The tower is drawn on Sheet 2. Your clocks will turn it.'],
 ];
-function currentNote() { let n = NOTES[0][1]; for (const [ok, t] of NOTES) if (ok(S)) n = t; return n; }
+const NOTES2 = [
+  [s => true, 'A tower keeps time for a whole town. Same verb, larger wheels.'],
+  [s => s.tower.wheels[1].bought > 0, 'The hour wheel turns the arbor. The arbor counts the hours.'],
+  [s => s.tower.hours >= 1000, 'Every hour the tower keeps quickens the clocks below it.'],
+  [s => s.autoChime, 'The tower calls each clock home the moment it is finished.'],
+  [s => s.tower.hours >= 1e7, 'Listen. The bell is nearly ready.'],
+  [s => s.struck, 'The town heard it. There is a second case behind the bell.'],
+  [s => s.locks.case2 && s.locks.case2.solved, 'Sheet 3 is a city. I will need more paper.'],
+];
+const noteFor = list => { let n = list[0][1]; for (const [ok, t] of list) if (ok(S)) n = t; return n; };
 
-// ---------- machine drawing ----------
-// The train is a real mesh: every gear shares one tooth pitch, sits exactly
-// one pitch-radius-sum from its neighbour, and its angle is derived from the
-// pinion's angle through the tooth ratio, so teeth always land in gaps.
-const cv = $('machine'), cx = cv.getContext('2d');
-const PITCH = 14;                                  // arc length of one tooth + gap
-const TEETH = [12, 16, 20, 24, 28, 32, 36, 40];
-const ADD = 0.32 * PITCH, DED = 0.42 * PITCH;      // addendum / dedendum
-const TRAIN = (() => {
-  const g = TEETH.map(n => ({ n, r: n * PITCH / (2 * Math.PI), x: 0, y: 0, theta: 0 }));
+// ---------- theme ----------
+function applyTheme(t) {
+  const root = document.documentElement;
+  if (t === 'light' || t === 'dark') root.setAttribute('data-theme', t); else root.removeAttribute('data-theme');
+  document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeSet === (t || 'system'))));
+  readColors();
+}
+function savedTheme() { try { return localStorage.getItem(THEME_KEY) || 'system'; } catch (e) { return 'system'; } }
+document.querySelectorAll('[data-theme-set]').forEach(b => b.onclick = () => {
+  const t = b.dataset.themeSet; try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  applyTheme(t);
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => readColors());
+
+// ---------- shared gear geometry ----------
+// Every train is a real mesh: one tooth pitch for all wheels, centres one
+// pitch-radius-sum apart, and each angle derived from the first wheel's angle
+// through the tooth ratio, so teeth always land in gaps.
+const ADDF = 0.32, DEDF = 0.42;
+function buildTrain(teeth, pitch, box, zig) {
+  const g = teeth.map(n => ({ n, r: n * pitch / (2 * Math.PI), x: 0, y: 0, theta: 0 }));
   for (let i = 1; i < g.length; i++) {
-    const th = (i % 2 ? -1 : 1) * 0.5 - 0.06;      // zigzag so the train stays compact
+    const th = (i % 2 ? -1 : 1) * zig - 0.06;
     const d = g[i - 1].r + g[i].r;
-    g[i].x = g[i - 1].x + d * Math.cos(th); g[i].y = g[i - 1].y + d * Math.sin(th);
-    g[i].theta = th;                                // direction from gear i-1 to gear i
+    g[i].x = g[i - 1].x + d * Math.cos(th); g[i].y = g[i - 1].y + d * Math.sin(th); g[i].theta = th;
   }
-  // Fit to the canvas, leaving room for labels and the title block.
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const p of g) { x0 = Math.min(x0, p.x - p.r); x1 = Math.max(x1, p.x + p.r); y0 = Math.min(y0, p.y - p.r); y1 = Math.max(y1, p.y + p.r); }
-  const W = 1000, H = 380, padL = 150, padR = 40, padT = 40, padB = 50;
-  const k = Math.min((W - padL - padR) / (x1 - x0), (H - padT - padB) / (y1 - y0));
-  const ox = padL + ((W - padL - padR) - (x1 - x0) * k) / 2 - x0 * k;
-  const oy = padT + ((H - padT - padB) - (y1 - y0) * k) / 2 - y0 * k;
-  return { g, k, ox, oy };
-})();
-let pinionAngle = 0;
-function trainAngles() {
-  const g = TRAIN.g, a = [pinionAngle];
-  for (let i = 1; i < g.length; i++) {
-    const th = g[i].theta, A = g[i - 1], B = g[i];
+  const add = ADDF * pitch;
+  for (const p of g) { x0 = Math.min(x0, p.x - p.r - add); x1 = Math.max(x1, p.x + p.r + add); y0 = Math.min(y0, p.y - p.r - add); y1 = Math.max(y1, p.y + p.r + add); }
+  const k = Math.min(box.w / (x1 - x0), box.h / (y1 - y0));
+  const ox = box.x + (box.w - (x1 - x0) * k) / 2 - x0 * k, oy = box.y + (box.h - (y1 - y0) * k) / 2 - y0 * k;
+  return { g, k, ox, oy, pitch, add, ded: DEDF * pitch };
+}
+function trainAngles(T, a0) {
+  const a = [a0];
+  for (let i = 1; i < T.g.length; i++) {
+    const th = T.g[i].theta, A = T.g[i - 1], B = T.g[i];
     a[i] = th + Math.PI - Math.PI / B.n + (th - a[i - 1]) * A.n / B.n;
   }
   return a;
@@ -255,37 +394,32 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 let COL = {};
 function readColors() { COL = { ink: css('--ink'), dim: css('--ink-dim'), faint: css('--ink-faint'), red: css('--red'), wash: css('--wash'), paper: css('--paper'), brass: css('--brass') }; }
 
-function gearPath(ctx, n, r, a) {
-  const rt = r + ADD, rr = r - DED, w = Math.PI / n;
+function gearPath(ctx, n, r, a, add, ded) {
+  const rt = r + add, rr = r - ded, w = Math.PI / n;
   ctx.beginPath();
   for (let t = 0; t < n; t++) {
     const c = a + t * 2 * Math.PI / n;
-    const pts = [[rr, c - 0.62 * w], [rt, c - 0.3 * w], [rt, c + 0.3 * w], [rr, c + 0.62 * w]];
-    for (const [rad, ang] of pts) ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+    for (const [rad, ang] of [[rr, c - 0.62 * w], [rt, c - 0.3 * w], [rt, c + 0.3 * w], [rr, c + 0.62 * w]]) ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
   }
   ctx.closePath();
 }
-function centreLines(ctx, r) {
-  ctx.save(); ctx.setLineDash([10, 3, 2, 3]); ctx.strokeStyle = COL.faint; ctx.lineWidth = 0.8;
-  const L = r + ADD + 10;
-  ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(L, 0); ctx.moveTo(0, -L); ctx.lineTo(0, L); ctx.stroke();
-  ctx.restore();
-}
-function drawGear(ctx, p, a, state, hi) {
+function drawGear(ctx, T, p, a, state, hi) {
   ctx.save(); ctx.translate(p.x, p.y);
-  centreLines(ctx, p.r);
+  const lw = 1 / T.k;
+  // centre lines (chain-dotted, as on any engineering drawing)
+  ctx.save(); ctx.setLineDash([10 * lw, 3 * lw, 2 * lw, 3 * lw]); ctx.strokeStyle = COL.faint; ctx.lineWidth = 0.8 * lw;
+  const L = p.r + T.add + 10 * lw;
+  ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(L, 0); ctx.moveTo(0, -L); ctx.lineTo(0, L); ctx.stroke(); ctx.restore();
   if (state === 'planned') {
-    // Unbuilt parts are drawn the way a draughtsman shows them: a chain-dotted pitch circle.
-    ctx.setLineDash([8, 3, 2, 3]); ctx.strokeStyle = COL.dim; ctx.lineWidth = 1;
+    ctx.setLineDash([8 * lw, 3 * lw, 2 * lw, 3 * lw]); ctx.strokeStyle = COL.dim; ctx.lineWidth = lw;
     ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
   } else {
-    gearPath(ctx, p.n, p.r, a);
-    ctx.fillStyle = hi ? COL.wash : COL.paper; ctx.fill();
+    gearPath(ctx, p.n, p.r, a, T.add, T.ded);
+    ctx.fillStyle = COL.paper; ctx.fill();
     if (hi) { ctx.fillStyle = COL.wash; ctx.fill(); }
-    ctx.lineWidth = 1.4; ctx.strokeStyle = COL.ink; ctx.stroke();
-    // rim, spokes and hub
-    const rim = p.r - DED - 4, hub = Math.max(5, p.r * 0.18);
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.4 * lw; ctx.strokeStyle = COL.ink; ctx.stroke();
+    const rim = p.r - T.ded - 4 * lw, hub = Math.max(5 * lw, p.r * 0.18);
+    ctx.lineWidth = lw;
     ctx.beginPath(); ctx.arc(0, 0, rim, 0, Math.PI * 2); ctx.stroke();
     const spokes = p.n >= 24 ? 5 : 4;
     for (let k = 0; k < spokes; k++) {
@@ -293,51 +427,68 @@ function drawGear(ctx, p, a, state, hi) {
       ctx.beginPath(); ctx.moveTo(Math.cos(s) * hub, Math.sin(s) * hub); ctx.lineTo(Math.cos(s) * rim, Math.sin(s) * rim); ctx.stroke();
     }
     ctx.beginPath(); ctx.arc(0, 0, hub, 0, Math.PI * 2); ctx.fillStyle = COL.paper; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI * 2); ctx.fillStyle = COL.ink; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 2.2 * lw, 0, Math.PI * 2); ctx.fillStyle = COL.ink; ctx.fill();
   }
   ctx.restore();
 }
+function labelGear(ctx, T, i, text) {
+  const p = T.g[i], X = T.ox + p.x * T.k, up = i % 2 === 1;
+  const Y = up ? T.oy + (p.y - p.r - T.add) * T.k - 10 : T.oy + (p.y + p.r + T.add) * T.k + 18;
+  ctx.fillStyle = COL.red; ctx.fillText(text, X, Y);
+}
 
-let flash = new Array(8).fill(0);
+// ---------- Drawing No. 1: the clock's gear train ----------
+const cv = $('machine'), cx = cv.getContext('2d');
+const TRAIN = buildTrain([12, 16, 20, 24, 28, 32, 36, 40], 14, { x: 170, y: 64, w: 790, h: 270 }, 0.5);
+let escAngle = 0;          // continuous escapement phase, in teeth
+const flash = new Array(8).fill(0);
 function drawMachine(dt) {
   const W = cv.width, H = cv.height;
-  cx.setTransform(1, 0, 0, 1, 0, 0);
-  cx.clearRect(0, 0, W, H);
-  // Pinion speed follows the train's output; every other gear follows by ratio.
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, W, H);
   const rate = S.gears[0].amount * gearMult(S, 0);
-  if (S.gears[0].amount > 0) pinionAngle += dt * (0.35 + 0.22 * Math.log10(1 + rate));
-  const ang = trainAngles();
+  if (S.gears[0].amount > 0) escAngle += dt * (0.8 + 0.5 * Math.log10(1 + rate));
+  // The escapement lets the pinion advance half a tooth per beat: a quick move, then a rest.
+  const beat = Math.floor(escAngle), frac = escAngle - beat;
+  const n0 = TRAIN.g[0].n;
+  const pinion = (beat + Math.min(1, frac * 5)) * Math.PI / n0;
+  const ang = trainAngles(TRAIN, pinion);
   cx.setTransform(TRAIN.k, 0, 0, TRAIN.k, TRAIN.ox, TRAIN.oy);
-  const lw = 1 / TRAIN.k;
   for (let i = 7; i >= 0; i--) {
-    const p = TRAIN.g[i], g = S.gears[i];
+    const g = S.gears[i];
     flash[i] = Math.max(0, flash[i] - dt * 2);
-    const built = g.amount > 0;
-    const planned = !built && (i === 0 || S.gears[i - 1].amount > 0);
+    const built = g.amount > 0, planned = !built && (i === 0 || S.gears[i - 1].amount > 0);
     if (!built && !planned) continue;
-    drawGear(cx, p, ang[i], built ? 'built' : 'planned', flash[i] > 0);
+    drawGear(cx, TRAIN, TRAIN.g[i], ang[i], built ? 'built' : 'planned', flash[i] > 0);
   }
-  // Labels in red ink: number and tooth count, with a short leader.
+  if (S.gears[0].amount > 0) drawAnchor(cx, TRAIN, beat % 2 ? 1 : -1, Math.min(1, frac * 5));
   cx.setTransform(1, 0, 0, 1, 0, 0);
   cx.font = '13px "Courier Prime", "Courier New", monospace'; cx.textAlign = 'center';
   for (let i = 0; i < 8; i++) {
-    const p = TRAIN.g[i], g = S.gears[i];
-    if (!(g.amount > 0 || i === 0 || S.gears[i - 1].amount > 0)) continue;
-    const X = TRAIN.ox + p.x * TRAIN.k, Y = TRAIN.oy + (p.y + p.r + ADD) * TRAIN.k;
-    const up = i % 2 === 1;   // odd gears sit high, label above
-    const ly = up ? TRAIN.oy + (p.y - p.r - ADD) * TRAIN.k - 10 : Y + 18;
-    cx.fillStyle = COL.red; cx.fillText(`${i + 1} · ${p.n}T`, X, ly);
+    const g = S.gears[i];
+    if (g.amount > 0 || i === 0 || S.gears[i - 1].amount > 0) labelGear(cx, TRAIN, i, `${i + 1} · ${TRAIN.g[i].n}T`);
   }
-  // Escapement: a pallet that rocks on the pinion's beat.
-  const p0 = TRAIN.g[0];
-  const X0 = TRAIN.ox + (p0.x - p0.r - ADD) * TRAIN.k - 34, Y0 = TRAIN.oy + p0.y * TRAIN.k - 30;
-  const sway = S.gears[0].amount > 0 ? Math.sin(pinionAngle * p0.n / 2) * 0.28 : 0;
-  cx.save(); cx.translate(X0, Y0); cx.rotate(sway);
-  cx.strokeStyle = COL.ink; cx.lineWidth = 1.4;
-  cx.beginPath(); cx.moveTo(-18, 22); cx.lineTo(0, 0); cx.lineTo(18, 22); cx.stroke();
-  cx.beginPath(); cx.moveTo(0, 0); cx.lineTo(0, -16); cx.stroke();
-  cx.beginPath(); cx.arc(0, 0, 3, 0, Math.PI * 2); cx.fillStyle = COL.red; cx.fill();
-  cx.restore();
+}
+// Anchor escapement seated over the pinion: its two pallets dip into the
+// pinion's teeth in turn, letting the train through one beat at a time.
+function drawAnchor(ctx, T, side, t) {
+  const p = T.g[0], lw = 1 / T.k;
+  const tip = p.r + T.add, pivotY = p.y - tip - 34;
+  const tilt = side * (0.07 - 0.14 * (1 - t)) ;
+  ctx.save(); ctx.translate(p.x, pivotY); ctx.rotate(tilt);
+  ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.6 * lw; ctx.fillStyle = COL.paper;
+  const spread = 2.2 * Math.PI / p.n;               // pallets span about two teeth
+  const pal = s => {
+    const a = -Math.PI / 2 + s * spread;
+    const depth = (s === side ? 0.75 : 0.1) * T.add;   // the engaged pallet sits between teeth
+    const rx = Math.cos(a) * (tip - depth), ry = Math.sin(a) * (tip - depth) + (p.y - pivotY);
+    return [rx, ry];
+  };
+  const [lx, ly] = pal(-1), [rx, ry] = pal(1);
+  ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx * 0.6, ly * 0.35); ctx.lineTo(0, 0); ctx.lineTo(rx * 0.6, ry * 0.35); ctx.lineTo(rx, ry); ctx.stroke();
+  for (const [x, y] of [[lx, ly], [rx, ry]]) { ctx.beginPath(); ctx.arc(x, y, 2.4 * lw, 0, Math.PI * 2); ctx.fillStyle = COL.ink; ctx.fill(); }
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -22); ctx.stroke();      // crutch up to the pendulum
+  ctx.beginPath(); ctx.arc(0, 0, 3.2 * lw, 0, Math.PI * 2); ctx.fillStyle = COL.red; ctx.fill();
+  ctx.restore();
 }
 
 function drawFace(c, t, n) {
@@ -354,37 +505,213 @@ function drawFace(c, t, n) {
   x.restore();
 }
 
-// ---------- UI build ----------
-const gearRows = [];
-function buildGears() {
-  const box = $('gears'); box.innerHTML = '';
-  GEAR_NAMES.forEach((nm, i) => {
+// ---------- Drawing No. 2: the clocktower ----------
+const tv = $('tower'), tx = tv.getContext('2d');
+const TTRAIN = buildTrain([20, 30, 40, 50], 16, { x: 470, y: 70, w: 480, h: 250 }, 0.55);
+let towerPhase = 0, bellSwing = 0;
+const tflash = new Array(4).fill(0);
+function drawTower(dt) {
+  const W = tv.width, H = tv.height;
+  tx.setTransform(1, 0, 0, 1, 0, 0); tx.clearRect(0, 0, W, H);
+  const w = S.tower.wheels, rate = w[0].amount * (w[0].amount > 0 ? 1 : 0);
+  if (w[0].amount > 0) towerPhase += dt * (0.15 + 0.12 * Math.log10(1 + rate));
+  // Elevation of the tower
+  const X = 300, base = 352, top = 92, half = 62;
+  tx.strokeStyle = COL.ink; tx.lineWidth = 1.5; tx.fillStyle = COL.paper;
+  tx.beginPath(); tx.moveTo(X - half - 18, base); tx.lineTo(X + half + 18, base); tx.stroke();          // ground
+  tx.strokeRect(X - half, top + 60, half * 2, base - top - 60);                                          // shaft
+  tx.beginPath(); tx.moveTo(X - half - 8, top + 60); tx.lineTo(X, top - 30); tx.lineTo(X + half + 8, top + 60); tx.closePath(); tx.stroke(); // spire
+  // belfry with the bell
+  tx.beginPath(); tx.moveTo(X - 26, top + 60); tx.lineTo(X - 26, top + 34); tx.arc(X, top + 34, 26, Math.PI, 0); tx.lineTo(X + 26, top + 60); tx.stroke();
+  if (S.struck || bellSwing > 0) bellSwing = Math.max(0, bellSwing - dt);
+  const sw = Math.sin(performance.now() / 300) * 0.25 * (bellSwing > 0 ? 1 : 0);
+  tx.save(); tx.translate(X, top + 24); tx.rotate(sw);
+  tx.beginPath(); tx.moveTo(-6, 4); tx.quadraticCurveTo(-8, 22, -18, 30); tx.lineTo(18, 30); tx.quadraticCurveTo(8, 22, 6, 4); tx.closePath(); tx.fillStyle = S.struck ? COL.wash : COL.paper; tx.fill(); tx.stroke();
+  tx.restore();
+  // the clock face, showing the tower's own time
+  const fy = top + 120, fr = 42;
+  tx.beginPath(); tx.arc(X, fy, fr, 0, Math.PI * 2); tx.fillStyle = COL.paper; tx.fill(); tx.lineWidth = 2; tx.stroke();
+  tx.lineWidth = 1; tx.beginPath(); tx.arc(X, fy, fr - 6, 0, Math.PI * 2); tx.stroke();
+  for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; tx.beginPath(); tx.moveTo(X + Math.cos(a) * (fr - 6), fy + Math.sin(a) * (fr - 6)); tx.lineTo(X + Math.cos(a) * (fr - 12), fy + Math.sin(a) * (fr - 12)); tx.lineWidth = k % 3 ? 1 : 2.5; tx.stroke(); }
+  const hrs = S.tower.hours % 12;
+  const hand = (a, l, wd, col) => { tx.save(); tx.translate(X, fy); tx.rotate(a); tx.beginPath(); tx.moveTo(0, 5); tx.lineTo(0, -l); tx.strokeStyle = col; tx.lineWidth = wd; tx.stroke(); tx.restore(); };
+  hand(hrs / 12 * Math.PI * 2, fr * 0.5, 3, COL.ink);
+  hand((S.tower.hours % 1) * Math.PI * 2, fr * 0.78, 1.5, COL.red);
+  // windows, door, coursing
+  tx.lineWidth = 1; tx.strokeStyle = COL.faint;
+  for (let y = top + 180; y < base; y += 14) { tx.beginPath(); tx.moveTo(X - half, y); tx.lineTo(X + half, y); tx.stroke(); }
+  tx.strokeStyle = COL.ink;
+  tx.beginPath(); tx.moveTo(X - 14, base); tx.lineTo(X - 14, base - 34); tx.arc(X, base - 34, 14, Math.PI, 0); tx.lineTo(X + 14, base); tx.stroke();
+  // leader from the face to the movement drawing
+  tx.save(); tx.setLineDash([3, 4]); tx.strokeStyle = COL.dim; tx.beginPath(); tx.moveTo(X + fr + 4, fy); tx.lineTo(TTRAIN.ox + (TTRAIN.g[0].x - TTRAIN.g[0].r) * TTRAIN.k - 12, TTRAIN.oy + TTRAIN.g[0].y * TTRAIN.k); tx.stroke(); tx.restore();
+  tx.font = '12px "Courier Prime", "Courier New", monospace'; tx.fillStyle = COL.dim; tx.textAlign = 'center';
+  tx.fillText('ELEVATION', X, base + 18);
+  tx.fillText('MOVEMENT', TTRAIN.ox + ((TTRAIN.g[0].x + TTRAIN.g[3].x) / 2) * TTRAIN.k, 30);
+  // the movement: four turret wheels in mesh
+  const ang = trainAngles(TTRAIN, towerPhase);
+  tx.setTransform(TTRAIN.k, 0, 0, TTRAIN.k, TTRAIN.ox, TTRAIN.oy);
+  for (let i = 3; i >= 0; i--) {
+    tflash[i] = Math.max(0, tflash[i] - dt * 2);
+    const built = w[i].amount > 0, planned = !built && (i === 0 || w[i - 1].amount > 0);
+    if (!built && !planned) continue;
+    drawGear(tx, TTRAIN, TTRAIN.g[i], ang[i], built ? 'built' : 'planned', tflash[i] > 0);
+  }
+  tx.setTransform(1, 0, 0, 1, 0, 0);
+  tx.font = '13px "Courier Prime", "Courier New", monospace';
+  for (let i = 0; i < 4; i++) if (w[i].amount > 0 || i === 0 || w[i - 1].amount > 0) labelGear(tx, TTRAIN, i, `${i + 1} · ${TTRAIN.g[i].n}T`);
+}
+
+// ---------- the master's cases ----------
+const lockAnim = {};
+function buildCase(id, box) {
+  const L = LOCKS[id];
+  box.innerHTML = `<p class="clue">${L.clue}</p>
+    <canvas width="520" height="200" aria-label="The case's dials"></canvas>
+    <div class="dials" style="grid-template-columns: repeat(${L.dials.length}, minmax(0, 1fr))"></div>
+    <p class="sealed" hidden></p>
+    <div class="row"><span class="hint" data-k="moves"></span><button class="ghost" data-k="hint">Ask Tock for a hint <span class="c">${hintCost} chime</span></button></div>`;
+  const dials = box.querySelector('.dials');
+  L.dials.forEach((d, i) => {
+    const el = document.createElement('div'); el.className = 'dial-ctl';
+    el.innerHTML = `<span>${d.name}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Turn ${d.name} back">↺</button><button class="ghost" data-dir="1" aria-label="Turn ${d.name} forward">↻</button></span>`;
+    el.querySelectorAll('button').forEach(b => b.onclick = () => {
+      if (lockTurn(S, id, i, +b.dataset.dir)) {
+        box.querySelectorAll('.hinted').forEach(h => h.classList.remove('hinted'));
+        const st = S.locks[id];
+        if (st.solved) onCaseOpened(id);
+        refresh(); save();
+      }
+    });
+    dials.appendChild(el);
+  });
+  box.querySelector('[data-k=hint]').onclick = () => {
+    const st = lockState(S, id);
+    if (S.chimes < hintCost || st.solved) return;
+    const h = lockHint(st.pos, id); if (!h) return;
+    S.chimes -= hintCost;
+    box.querySelectorAll('.hinted').forEach(x => x.classList.remove('hinted'));
+    box.querySelectorAll('.dial-ctl')[h.i].querySelector(`[data-dir="${h.dir}"]`).classList.add('hinted');
+    box.querySelector('[data-k=moves]').textContent = `Tock says: ${h.moves} turn${h.moves === 1 ? '' : 's'} from open.`;
+    refresh();
+  };
+}
+function drawCase(id, box, dt) {
+  const L = LOCKS[id], st = lockState(S, id), c = box.querySelector('canvas'); if (!c) return;
+  const x = c.getContext('2d'), W = c.width, H = c.height, n = L.dials.length;
+  x.clearRect(0, 0, W, H);
+  const gap = W / n, R = Math.min(gap * 0.42, 80);
+  if (!lockAnim[id]) lockAnim[id] = st.pos.map(p => p);
+  const A = lockAnim[id];
+  for (let i = 0; i < n; i++) {
+    // ease each dial toward its notch (shortest way round)
+    let d = st.pos[i] - A[i]; d = ((d + 18) % 12 + 12) % 12 - 6; A[i] += d * Math.min(1, dt * 10);
+    const cxp = gap * (i + 0.5), cyp = H / 2 + 6;
+    // linking pawl to the next dial
+    if (i < n - 1) { x.strokeStyle = COL.dim; x.lineWidth = 2; x.beginPath(); x.moveTo(cxp + R + 4, cyp); x.lineTo(cxp + gap - R - 4, cyp); x.stroke();
+      x.beginPath(); x.arc(cxp + gap / 2, cyp, 4, 0, Math.PI * 2); x.fillStyle = COL.ink; x.fill(); }
+    x.save(); x.translate(cxp, cyp);
+    // knurled rim
+    const teeth = 36; x.beginPath();
+    for (let t = 0; t < teeth * 2; t++) { const a = t * Math.PI / teeth - A[i] * Math.PI / 6; const rr = t % 2 ? R : R - 4; x.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    x.closePath(); x.fillStyle = st.solved ? COL.wash : COL.paper; x.fill(); x.strokeStyle = COL.ink; x.lineWidth = 1.3; x.stroke();
+    x.beginPath(); x.arc(0, 0, R - 10, 0, Math.PI * 2); x.lineWidth = 1; x.stroke();
+    // labels: the label under the pointer is the current setting
+    x.font = `${Math.round(R * 0.19)}px "Courier Prime", "Courier New", monospace`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    for (let k = 0; k < 12; k++) {
+      const a = (k - A[i]) * Math.PI / 6 - Math.PI / 2;
+      const isCur = k === st.pos[i];
+      x.fillStyle = isCur ? COL.red : COL.dim;
+      x.fillText(L.dials[i].labels[k], Math.cos(a) * (R - 24), Math.sin(a) * (R - 24));
+    }
+    x.beginPath(); x.arc(0, 0, R * 0.16, 0, Math.PI * 2); x.fillStyle = COL.paper; x.fill(); x.strokeStyle = COL.ink; x.stroke();
+    x.restore();
+    // fixed pointer above each dial
+    x.beginPath(); x.moveTo(cxp - 7, cyp - R - 12); x.lineTo(cxp + 7, cyp - R - 12); x.lineTo(cxp, cyp - R - 1); x.closePath(); x.fillStyle = COL.red; x.fill();
+  }
+}
+function updateCase(id, box, need) {
+  const st = lockState(S, id), avail = lockAvailable(S, id);
+  box.querySelectorAll('.dial-ctl button').forEach(b => b.disabled = !avail || st.solved);
+  const sealed = box.querySelector('.sealed');
+  sealed.hidden = avail && !st.solved;
+  sealed.textContent = st.solved ? 'The case is open. Its page is in your journal.' : need;
+  const hb = box.querySelector('[data-k=hint]');
+  hb.disabled = !avail || st.solved || S.chimes < hintCost;
+  hb.hidden = st.solved;
+}
+function onCaseOpened(id) {
+  const page = PAGES[LOCKS[id].page];
+  toast(`The case clicks open: ${page.title.toLowerCase()}.`);
+  renderJournal();
+  if (id === 'case1') setTimeout(() => toast('Drawing No. 2 was under the page. The Clocktower is open.'), 2700);
+}
+
+// ---------- journal ----------
+function renderJournal() {
+  const box = $('journal'); box.innerHTML = '';
+  for (const pid of S.journal) {
+    const p = PAGES[pid], el = document.createElement('article'); el.className = 'page';
+    el.innerHTML = `<h3>${p.title}</h3>` + p.text.map((t, k) => `<p class="${k === p.text.length - 1 ? 'sig' : ''}">${t}</p>`).join('');
+    box.appendChild(el);
+  }
+  if (S.locks.case2 && S.locks.case2.solved) {
+    const el = document.createElement('p'); el.className = 'hint';
+    el.textContent = 'Drawing No. 3, the city, arrives in the next update.';
+    box.appendChild(el);
+  }
+}
+
+// ---------- ledger rows (gears and turret wheels share one component) ----------
+function buildRows(box, names, onOne, onSet) {
+  const rows = [];
+  box.innerHTML = '';
+  names.forEach((nm, i) => {
     const row = document.createElement('div'); row.className = 'gear';
     row.innerHTML = `<div class="no">${i + 1}</div>
       <div><div class="nm">${nm}<span class="jewels" title="Jewel bearings"></span></div><div class="sub"></div></div>
       <button data-k="one"><span>Buy 1</span><span class="c"></span></button>
       <button data-k="set" class="ghost"><span>To 10</span><span class="c"></span></button>`;
     const jw = row.querySelector('.jewels'); for (let k = 0; k < 10; k++) jw.appendChild(document.createElement('i'));
-    row.querySelector('[data-k=one]').onclick = () => { if (buyGear(S, i, false)) flash[i] = 1; refresh(); };
-    row.querySelector('[data-k=set]').onclick = () => { if (buySet(S, i)) flash[i] = 1; refresh(); };
-    box.appendChild(row); gearRows.push(row);
+    row.querySelector('[data-k=one]').onclick = () => { onOne(i); refresh(); };
+    row.querySelector('[data-k=set]').onclick = () => { onSet(i); refresh(); };
+    box.appendChild(row); rows.push(row);
   });
+  return rows;
 }
-function buyAll() { for (let i = 7; i >= 0; i--) if (buyGear(S, i, true)) flash[i] = 1; refresh(); }
+function updateRow(row, item, vis, shown, cost, have, multText, unit) {
+  row.hidden = !shown;
+  row.classList.toggle('locked', !vis);
+  const set = item.bought % 10;
+  row.querySelectorAll('.jewels i').forEach((t, k) => t.classList.toggle('on', k < set));
+  row.querySelector('.sub').textContent = multText;
+  const b1 = row.querySelector('[data-k=one]'), b2 = row.querySelector('[data-k=set]');
+  b1.querySelector('.c').textContent = fmt(cost) + unit; b1.disabled = !vis || have < cost || !isFinite(cost);
+  b2.querySelector('.c').textContent = fmt(cost * (10 - set)) + unit; b2.disabled = !vis || have < cost || !isFinite(cost);
+}
+
+let gearRows = [], towerRows = [];
+function buyAll() {
+  if (view === 'tower') { for (let i = 3; i >= 0; i--) if (buyTower(S, i, true)) tflash[i] = 1; }
+  else for (let i = 7; i >= 0; i--) if (buyGear(S, i, true)) flash[i] = 1;
+  refresh();
+}
+function buyTowerSet(i) { let n = 0; do { if (!buyTower(S, i, false)) break; n++; } while (S.tower.wheels[i].bought % 10 !== 0); if (n) tflash[i] = 1; }
 
 function renderShop() {
   const box = $('shop'); box.innerHTML = '';
-  const add = (nm, d, cost, can, done, fn, extra) => {
+  const add = (nm, d, cost, done, fn, extra) => {
     const el = document.createElement('div'); el.className = 'upg';
     el.innerHTML = `<div><div class="nm">${nm}</div><div class="d">${d}</div></div>`;
     if (extra) el.querySelector('div').appendChild(extra);
     const b = document.createElement('button');
     b.innerHTML = done ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${fmt(cost)} tension</span>`;
-    if (!done) b.dataset.cost = cost; b.disabled = done || !can; b.onclick = () => { fn(); renderShop(); refresh(); };
+    if (!done) b.dataset.cost = cost;
+    b.disabled = done || S.tension < cost; b.onclick = () => { fn(); renderShop(); refresh(); };
     el.appendChild(b); box.appendChild(el);
   };
-  add(`Tighter spring · level ${S.spring}`, `Every gear runs ×3 faster per level. Now ×${fmt(Math.pow(3, S.spring))}.`, springCost(S), S.tension >= springCost(S), false, () => buySpring(S));
-  if (S.winds >= 2 || S.oil > 0 || S.clocks.length) add(`Oiled pivots · ${S.oil}/3`, `Each jewel multiplies by ${(2 + 0.5 * Math.min(S.oil + 1, 3)).toFixed(1)} instead of ${(2 + 0.5 * S.oil).toFixed(1)}.`, oilCost(S), S.tension >= oilCost(S), S.oil >= 3, () => buyOil(S));
+  const maxed = S.spring >= SPRING_MAX;
+  add(`Tighter spring · ${S.spring}/${SPRING_MAX}`, maxed ? `Wound as tight as it goes. Every gear runs ×${fmt(Math.pow(3, S.spring))}.` : `Every gear runs ×3 faster per level. Now ×${fmt(Math.pow(3, S.spring))}.`, springCost(S), maxed, () => buySpring(S));
+  if (S.winds >= 2 || S.oil > 0 || S.clocks) add(`Oiled pivots · ${S.oil}/3`, `Each jewel multiplies by ${(2 + 0.5 * Math.min(S.oil + 1, 3)).toFixed(1)} instead of ${(2 + 0.5 * S.oil).toFixed(1)}.`, oilCost(S), S.oil >= 3, () => buyOil(S));
   for (const a of AUTOMATONS) {
     let sw = null;
     if (S.autos[a.id]) {
@@ -392,53 +719,75 @@ function renderShop() {
       sw.innerHTML = `<input type="checkbox" id="auto-${a.id}" ${S.autoOn[a.id] ? 'checked' : ''}> working`;
       sw.querySelector('input').onchange = e => { S.autoOn[a.id] = e.target.checked; };
     }
-    add(`<span class="bot-face">${a.name}</span> · automaton`, `${a.note} Buys gears ${a.gears[0] + 1} and ${a.gears[1] + 1} for you.`, a.cost, S.tension >= a.cost, !!S.autos[a.id], () => buyAuto(S, a), sw);
+    add(`<span class="bot-face">${a.name}</span> · automaton`, `${a.note} Buys gears ${a.gears[0] + 1} and ${a.gears[1] + 1} for you.`, a.cost, !!S.autos[a.id], () => buyAuto(S, a), sw);
   }
 }
-
+function upgradeRow(box, nm, d, label, dis, fn, extra) {
+  const el = document.createElement('div'); el.className = 'upg';
+  el.innerHTML = `<div><div class="nm">${nm}</div><div class="d">${d}</div></div>`;
+  if (extra) el.querySelector('div').appendChild(extra);
+  const b = document.createElement('button'); b.innerHTML = label; b.disabled = dis;
+  b.onclick = () => { fn(); lastBenchKey = lastTowerKey = ''; refresh(); }; el.appendChild(b); box.appendChild(el);
+}
 function renderBench() {
   const box = $('bench'); box.innerHTML = '';
-  for (let k = 0; k < Math.max(5, S.clocks.length); k++) {
-    const c = S.clocks[k];
-    const el = document.createElement('div'); el.className = 'clockTile' + (c ? '' : ' empty');
-    const can = document.createElement('canvas'); can.width = 128; can.height = 128;
-    el.appendChild(can);
-    el.appendChild(Object.assign(document.createElement('div'), { textContent: c ? `No. ${c.n}` : 'empty' }));
+  const shown = Math.min(5, S.clocks);
+  for (let k = 0; k < 5; k++) {
+    const el = document.createElement('div'); el.className = 'clockTile' + (k < shown ? '' : ' empty');
+    const can = document.createElement('canvas'); can.width = 128; can.height = 128; el.appendChild(can);
+    const label = k < shown ? (k === 4 && S.clocks > 5 ? `+${S.clocks - 4} more` : `No. ${k + 1}`) : 'empty';
+    el.appendChild(Object.assign(document.createElement('div'), { textContent: label }));
     box.appendChild(el);
   }
   const shop = $('benchShop'); shop.innerHTML = '';
-  const mk = (nm, d, label, dis, fn) => {
-    const el = document.createElement('div'); el.className = 'upg';
-    el.innerHTML = `<div><div class="nm">${nm}</div><div class="d">${d}</div></div>`;
-    const b = document.createElement('button'); b.innerHTML = label; b.disabled = dis;
-    b.onclick = () => { fn(); renderBench(); refresh(); }; el.appendChild(b); shop.appendChild(el);
-  };
-  mk(`Tempo · level ${S.tempo}`, `Everything inside runs ×2 faster per level. Now ×${fmt(Math.pow(2, S.tempo))}.`, `<span>Buy</span><span class="c">${fmt(tempoCost(S))} chime${tempoCost(S) > 1 ? 's' : ''}</span>`, S.chimes < tempoCost(S), () => buyTempo(S));
-  mk('Self-winding spring', 'Winds the mainspring for you whenever a wind would at least double your tension.', S.autoWind ? '<span>Owned</span>' : '<span>Buy</span><span class="c">1 chime</span>', S.autoWind || S.chimes < 1, () => buyAutoWind(S));
+  upgradeRow(shop, `Tempo · level ${S.tempo}`, `Everything inside runs ×2 faster per level. Now ×${fmt(Math.pow(2, S.tempo))}.`, `<span>Buy</span><span class="c">${fmt(tempoCost(S))} chime${tempoCost(S) > 1 ? 's' : ''}</span>`, S.chimes < tempoCost(S), () => buyTempo(S));
+  upgradeRow(shop, 'Self-winding spring', 'Winds the mainspring for you whenever a wind would at least double your tension.', S.autoWind ? '<span>Owned</span>' : '<span>Buy</span><span class="c">1 chime</span>', S.autoWind || S.chimes < 1, () => buyAutoWind(S));
+}
+function renderTowerShop() {
+  const box = $('towerShop'); box.innerHTML = '';
+  let sw = null;
+  if (S.autoChime) {
+    sw = document.createElement('label'); sw.className = 'switch';
+    sw.innerHTML = `<input type="checkbox" id="auto-chime" ${S.autoChimeOn ? 'checked' : ''}> working`;
+    sw.querySelector('input').onchange = e => { S.autoChimeOn = e.target.checked; };
+  }
+  upgradeRow(box, 'The tower calls the hour', 'Finishes each clock the moment it is ready and brings it home to the bench.', S.autoChime ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${autoChimeCost} chimes</span>`, S.autoChime || S.chimes < autoChimeCost, () => buyAutoChime(S), sw);
+  upgradeRow(box, `Louder bells · level ${S.bells}`, `Each finished clock rings ×2 more chimes per level. Now ×${fmt(Math.pow(2, S.bells))}.`, `<span>Buy</span><span class="c">${fmt(bellCost(S))} chimes</span>`, S.chimes < bellCost(S), () => buyBell(S));
 }
 
-// ---------- refresh (cheap, every frame-ish) ----------
-let lastShopKey = '', lastBenchKey = '';
-function reveal(id) { const el = $(id); if (el.hidden) { el.hidden = false; const p = el.querySelector('.panel'); if (p) { p.classList.add('fresh'); } } }
+// ---------- refresh ----------
+let lastShopKey = '', lastBenchKey = '', lastTowerKey = '', lastJournalN = -1;
+function reveal(id) { const el = $(id); if (el.hidden) { el.hidden = false; const p = el.querySelector('.panel, .case'); if (p) p.classList.add('fresh'); } }
 function refresh() {
-  $('ticks').textContent = fmt(S.ticks);
-  const rate = S.gears[0].amount * gearMult(S, 0);
-  $('rate').textContent = fmt(rate) + ' / sec';
+  // readout
+  if (view === 'tower') {
+    $('readLbl').textContent = 'Hours'; $('readBig').textContent = fmt(S.tower.hours);
+    $('readRate').textContent = fmt(S.tower.wheels[0].amount * (S.tower.wheels[0].amount > 0 ? towerMult(S, 0) : 0)) + ' / sec';
+  } else {
+    $('readLbl').textContent = 'Ticks'; $('readBig').textContent = fmt(S.ticks);
+    $('readRate').textContent = fmt(S.gears[0].amount * gearMult(S, 0)) + ' / sec';
+  }
+  $('drawingNo').textContent = view === 'tower' ? 'Drawing No. 2' : view === 'journal' ? 'Journal' : 'Drawing No. 1';
+
+  // nav
+  const tOpen = towerOpen(S);
+  $('nav').hidden = !(tOpen || S.journal.length);
+  $('tabTower').hidden = !tOpen;
+  $('tabJournal').hidden = !S.journal.length;
+  $('tabJournal').textContent = `Journal (${S.journal.length})`;
+
+  if (view === 'clock') refreshClock();
+  if (view === 'tower') refreshTower();
+  if (S.journal.length !== lastJournalN) { lastJournalN = S.journal.length; renderJournal(); }
+}
+function refreshClock() {
   gearRows.forEach((row, i) => {
     const g = S.gears[i], vis = gearVisible(S, i);
-    row.hidden = !vis && !(i > 0 && gearVisible(S, i - 1));
-    row.classList.toggle('locked', !vis);
-    const set = g.bought % 10;
-    row.querySelectorAll('.jewels i').forEach((t, k) => t.classList.toggle('on', k < set));
-    row.querySelector('.sub').textContent = vis ? `${fmt(g.amount)} turning · ×${fmt(gearMult(S, i))}` : `buy one ${GEAR_NAMES[i - 1]} first`;
-    const cost = gearCost(S, i), toSet = 10 - set;
-    const b1 = row.querySelector('[data-k=one]'), b2 = row.querySelector('[data-k=set]');
-    b1.querySelector('.c').textContent = fmt(cost); b1.disabled = !vis || S.ticks < cost;
-    b2.querySelector('.c').textContent = fmt(cost * toSet); b2.disabled = !vis || S.ticks < cost;
+    updateRow(row, g, vis, vis || (i > 0 && gearVisible(S, i - 1)), gearCost(S, i), S.ticks,
+      vis ? `${fmt(g.amount)} turning · ×${fmt(gearMult(S, i))}` : `buy one ${GEAR_NAMES[i - 1]} first`, '');
   });
 
-  // Mainspring appears once the train gets going.
-  if (S.runTicks >= 1e7 || S.winds > 0 || S.tension > 0 || S.clocks.length) reveal('windBox');
+  if (S.runTicks >= 1e7 || S.winds > 0 || S.tension > 0 || S.clocks) reveal('windBox');
   const wg = windGain(S);
   $('tensionLbl').textContent = `${fmt(S.tension)} tension`;
   $('windMeter').style.width = Math.min(100, Math.max(0, Math.log10(Math.max(1, S.runTicks)) / 10 * 100)) + '%';
@@ -448,38 +797,83 @@ function refresh() {
   $('windBtn').disabled = wg <= 0;
   $('windBtn').textContent = wg > 0 ? `Wind the spring  +${fmt(wg)}` : 'Wind the spring';
 
-  if (S.winds > 0 || S.clocks.length) reveal('shopBox');
+  if (S.winds > 0 || S.clocks) reveal('shopBox');
   const shopKey = [Math.floor(Math.log2(1 + S.tension)), S.spring, S.oil, Object.keys(S.autos).join(), S.winds >= 2].join('|');
   if (shopKey !== lastShopKey && !$('shopBox').hidden) { lastShopKey = shopKey; renderShop(); }
-  // Cheap enable/disable between rebuilds
   $('shop').querySelectorAll('button[data-cost]').forEach(b => { b.disabled = S.tension < Number(b.dataset.cost); });
 
-  if (S.runTicks >= 1e20 || S.clocks.length) reveal('chimeBox');
-  $('chimeMeter').style.width = Math.min(100, Math.log10(Math.max(1, S.ticks)) / 45 * 100) + '%';
+  if (S.runTicks >= 1e20 || S.clocks) reveal('chimeBox');
+  const at = chimeAt(S);
+  $('chimeHint').innerHTML = `Reach <b>${fmt(at)} ticks</b> to finish Clock No. ${S.clocks + 1}. It goes on the workbench and keeps running by itself. Your automatons come with you.`;
+  $('chimeMeter').style.width = Math.min(100, Math.log10(Math.max(1, S.ticks)) / Math.log10(at) * 100) + '%';
   $('chimeBtn').disabled = !canChime(S);
-  $('chimeLbl').textContent = `${S.clocks.length} finished`;
+  $('chimeBtn').textContent = canChime(S) ? `Finish the clock  +${fmt(chimeGain(S))} chime${chimeGain(S) === 1 ? '' : 's'}` : 'Finish the clock';
+  $('chimeLbl').textContent = `${S.clocks} finished`;
 
-  if (S.clocks.length) reveal('benchBox');
+  if (S.clocks) reveal('benchBox');
   $('chimesLbl').textContent = `${fmt(S.chimes)} chime${S.chimes === 1 ? '' : 's'}`;
-  const benchKey = [S.clocks.length, S.chimes, S.tempo, S.autoWind].join('|');
+  const benchKey = [Math.min(S.clocks, 6), S.chimes >= tempoCost(S), S.chimes >= 1, S.tempo, S.autoWind].join('|');
   if (benchKey !== lastBenchKey && !$('benchBox').hidden) { lastBenchKey = benchKey; renderBench(); }
 
-  const n = currentNote(); if ($('note').textContent !== n) $('note').textContent = n;
-  $('stageTag').textContent = S.clocks.length ? `Clock No. ${S.clocks.length + 1} · Gear train` : 'Gear train';
+  if (S.clocks) reveal('case1Box');
+  $('case1Lbl').textContent = S.locks.case1?.solved ? 'opened' : lockAvailable(S, 'case1') ? 'the dials turn' : 'sealed';
+  updateCase('case1', $('case1'), `The dials won't turn until the workbench holds ${TOWER_AT} clocks (${S.clocks} so far).`);
+
+  const n = noteFor(NOTES); if ($('note').textContent !== n) $('note').textContent = n;
+  $('stageTag').textContent = `Clock No. ${S.clocks + 1} · Gear train`;
+}
+function refreshTower() {
+  towerRows.forEach((row, i) => {
+    const w = S.tower.wheels[i], vis = towerVisible(S, i);
+    updateRow(row, w, vis, vis || (i > 0 && towerVisible(S, i - 1)), towerCost(S, i), S.chimes,
+      vis ? `${fmt(w.amount)} turning · ×${fmt(towerMult(S, i))}` : `buy one ${TOWER_NAMES[i - 1]} first`, ' ch');
+  });
+  $('hoursLbl').textContent = `${fmt(S.chimes)} chime${S.chimes === 1 ? '' : 's'}`;
+  $('hoursHint').innerHTML = `The tower has kept <b>${fmt(S.tower.hours)} hours</b>, which makes every gear in your clocks run <b>×${fmt(hoursMult(S))}</b>.`;
+  const tk = [S.autoChime, S.bells, S.chimes >= autoChimeCost, S.chimes >= bellCost(S)].join('|');
+  if (tk !== lastTowerKey) { lastTowerKey = tk; renderTowerShop(); }
+  $('strikeMeter').style.width = Math.min(100, Math.log10(Math.max(1, S.tower.hours)) / Math.log10(STRIKE_AT) * 100) + '%';
+  $('strikeBtn').disabled = !canStrike(S);
+  $('strikeBtn').textContent = S.struck ? 'The hour has struck' : 'Strike the hour';
+  $('strikeLbl').textContent = S.struck ? 'struck' : `${fmt(S.tower.hours)} / ${fmt(STRIKE_AT)}`;
+  if (S.struck) reveal('case2Box');
+  $('case2Lbl').textContent = S.locks.case2?.solved ? 'opened' : 'found behind the bell';
+  updateCase('case2', $('case2'), 'Strike the hour first.');
+  const n = noteFor(NOTES2); if ($('note2').textContent !== n) $('note2').textContent = n;
 }
 
 let toastT;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
 
+// ---------- views ----------
+function show(v) {
+  view = v;
+  $('viewClock').hidden = v !== 'clock'; $('viewTower').hidden = v !== 'tower'; $('viewJournal').hidden = v !== 'journal';
+  for (const [id, name] of [['tabClock', 'clock'], ['tabTower', 'tower'], ['tabJournal', 'journal']]) $(id).setAttribute('aria-selected', String(v === name));
+  lastShopKey = lastBenchKey = lastTowerKey = '';
+  refresh();
+}
+$('tabClock').onclick = () => show('clock');
+$('tabTower').onclick = () => show('tower');
+$('tabJournal').onclick = () => show('journal');
+
 // ---------- save / load ----------
 function save() { try { S.savedAt = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function sanitize(o) {
+  // An overflowed number saves as null; bring it back as the largest allowed value.
+  const fix = v => (v === null || (typeof v === 'number' && !isFinite(v))) ? 1e300 : v;
+  o.ticks = fix(o.ticks); o.runTicks = fix(o.runTicks);
+  (o.gears || []).forEach(g => { g.amount = fix(g.amount); });
+  if (o.spring > SPRING_MAX) o.spring = SPRING_MAX;
+  return o;
+}
 function load() {
-  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) return Object.assign(newGame(), JSON.parse(raw)); } catch (e) {}
+  try { const raw = localStorage.getItem(SAVE_KEY); if (raw) return migrate(Object.assign(newGame(), sanitize(JSON.parse(raw)))); } catch (e) {}
   return null;
 }
 function catchUp(sec) {
   sec = Math.min(sec, 2 * 3600); if (sec < 2) return;
-  const before = S.ticks; const steps = Math.min(4000, Math.ceil(sec));
+  const steps = Math.min(4000, Math.ceil(sec));
   for (let k = 0; k < steps; k++) tick(S, sec / steps);
   toast(`While you were away the clock ran for ${Math.round(sec / 60)} min.`);
 }
@@ -490,40 +884,64 @@ document.addEventListener('keydown', e => { if ((e.key === 'm' || e.key === 'M')
 $('windBtn').onclick = () => { const g = windGain(S); if (wind(S)) { toast(`Spring wound: +${fmt(g)} tension.`); lastShopKey = ''; refresh(); save(); } };
 $('chimeBtn').onclick = () => {
   if (!canChime(S)) return;
-  const stage = $('stage');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const stage = $('stage'), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   stage.classList.add('zoom');
   setTimeout(() => {
-    chime(S); lastShopKey = ''; lastBenchKey = '';
+    const g = chimeGain(S); chime(S); lastShopKey = lastBenchKey = '';
     stage.style.transition = 'none'; stage.classList.remove('zoom'); void stage.offsetWidth; stage.style.transition = '';
     refresh(); save();
-    toast(`Clock No. ${S.clocks.length} chimes. It's on the workbench, keeping time.`);
+    toast(`Clock No. ${S.clocks} chimes (+${fmt(g)}). It's on the workbench, keeping time.`);
     $('benchBox').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
   }, reduce ? 0 : 1100);
 };
-function bindReset() { $('resetBtn').onclick = () => { const w = $('resetWrap'); w.innerHTML = '<span>Erase all progress?</span> <button id="resetYes">Erase</button> <button class="ghost" id="resetNo">Keep</button>'; $('resetYes').onclick = () => { S = newGame(); try { localStorage.removeItem(SAVE_KEY); } catch (e) {} for (const k of ['windBox','shopBox','chimeBox','benchBox']) $(k).hidden = true; lastShopKey = lastBenchKey = ''; bindReset(); refresh(); }; $('resetNo').onclick = () => { $('resetWrap').innerHTML = '<button class="ghost" id="resetBtn">Start over</button>'; bindReset(); }; }; }
+$('strikeBtn').onclick = () => { if (strike(S)) { bellSwing = 6; toast('The great bell strikes. Something rattles behind it.'); refresh(); save(); } };
+function bindReset() {
+  const w = $('resetWrap');
+  w.innerHTML = '<button class="ghost" id="resetBtn">Start over</button>';
+  $('resetBtn').onclick = () => {
+    w.innerHTML = '<span>Erase all progress?</span> <button id="resetYes">Erase</button> <button class="ghost" id="resetNo">Keep</button>';
+    $('resetYes').onclick = () => {
+      S = newGame(); try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+      for (const k of ['windBox', 'shopBox', 'chimeBox', 'benchBox', 'case1Box', 'case2Box']) $(k).hidden = true;
+      for (const k in lockAnim) delete lockAnim[k];
+      lastShopKey = lastBenchKey = lastTowerKey = ''; lastJournalN = -1; bindReset(); show('clock');
+    };
+    $('resetNo').onclick = bindReset;
+  };
+}
 
 // ---------- loop ----------
 let last = performance.now(), saveT = 0, faceT = 0;
 function frame(now) {
   const dt = Math.min(1, (now - last) / 1000); last = now;
-  tick(S, dt); drawMachine(dt);
-  faceT += dt;
-  document.querySelectorAll('#bench canvas').forEach((c, k) => { if (S.clocks[k]) drawFace(c, faceT + k * 7, k); });
+  tick(S, dt);
+  if (view === 'clock') {
+    drawMachine(dt);
+    faceT += dt;
+    document.querySelectorAll('#bench canvas').forEach((c, k) => { if (k < S.clocks) drawFace(c, faceT + k * 7, k); });
+    if (!$('case1Box').hidden) drawCase('case1', $('case1'), dt);
+  } else if (view === 'tower') {
+    drawTower(dt);
+    if (!$('case2Box').hidden) drawCase('case2', $('case2'), dt);
+  }
   refresh();
   saveT += dt; if (saveT > 5) { saveT = 0; save(); }
   requestAnimationFrame(frame);
 }
 
 function start(data) {
-  S = (data && data.S) ? Object.assign(newGame(), data.S) : (load() || newGame());
-  readColors(); buildGears(); bindReset();
+  S = (data && data.S) ? migrate(Object.assign(newGame(), sanitize(data.S))) : (load() || newGame());
+  applyTheme(savedTheme());
+  gearRows = buildRows($('gears'), GEAR_NAMES, i => { if (buyGear(S, i, false)) flash[i] = 1; }, i => { if (buySet(S, i)) flash[i] = 1; });
+  towerRows = buildRows($('towerWheels'), TOWER_NAMES, i => { if (buyTower(S, i, false)) tflash[i] = 1; }, buyTowerSet);
+  buildCase('case1', $('case1')); buildCase('case2', $('case2'));
+  bindReset();
   if (S.savedAt && !(data && data.S)) catchUp((Date.now() - S.savedAt) / 1000);
-  refresh();
-  addEventListener('visibilitychange', () => { if (document.hidden) save(); else { last = performance.now(); } });
+  show(data && data.view ? data.view : 'clock');
+  addEventListener('visibilitychange', () => { if (document.hidden) save(); else last = performance.now(); });
   requestAnimationFrame(t => { last = t; frame(t); });
 }
-window.claude?.hot?.snapshot?.(() => ({ S }));
+window.claude?.hot?.snapshot?.(() => ({ S, view }));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
 </script>

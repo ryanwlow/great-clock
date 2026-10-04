@@ -1,27 +1,44 @@
-// Pacing check: a greedy bot plays the game and logs when it winds and finishes clocks.
+// Pacing check: a greedy bot plays the game and logs its milestones.
 // Run with: node tools/sim.js
 const E = require('../engine.js');
 const s = E.newGame();
-const dt = 0.1; let t = 0, lastLog = 0; const marks = [];
+const dt = 0.1; let t = 0;
+const log = m => console.log(`${(t / 60).toFixed(1).padStart(6)}m  ${m}`);
+const seen = new Set(); const once = (k, m) => { if (!seen.has(k)) { seen.add(k); log(m); } };
 function spend() {
-  // greedy: automatons first, then spring/oil cheapest
   let did = true;
   while (did) {
     did = false;
     for (const a of E.AUTOMATONS) if (!s.autos[a.id] && E.buyAuto(s, a)) did = true;
     if (E.springCost(s) <= E.oilCost(s) ? E.buySpring(s) : E.buyOil(s)) did = true;
   }
-  while (E.buyTempo(s)) {}
+}
+function spendChimes() {
   if (!s.autoWind) E.buyAutoWind(s);
+  if (E.towerOpen(s)) {
+    if (!s.autoChime) { E.buyAutoChime(s); return; }
+    if (E.bellCost(s) <= s.chimes * 0.5) E.buyBell(s);
+    for (let i = 3; i >= 0; i--) E.buyTower(s, i, true);
+  } else {
+    while (s.tempo < 3 && E.buyTempo(s)) {}
+  }
 }
-while (t < 3 * 3600 && s.clocks.length < 3) {
-  // player: buy highest gears first, sets of ten
-  if (Math.round(t * 10) % 5 === 0) for (let i = 7; i >= 0; i--) while (E.buySet(s, i) > 0) {}
+let lastLog = 0;
+while (t < (+process.env.SIM_HOURS || 2) * 3600 && !s.struck) {
+  if (process.env.SIM_TRACE && t - lastLog > 60) { lastLog = t; log(`  clocks=${s.clocks} hours=${s.tower.hours.toExponential(1)} chimes=${Math.floor(s.chimes)} ticks=${s.ticks.toExponential(1)} spring=${s.spring} tempo=${s.tempo} m1=${E.gearMult(s, 0).toExponential(1)}`); }
+  if (Math.round(t * 10) % 5 === 0) { for (let i = 7; i >= 0; i--) while (E.buySet(s, i) > 0) {} spendChimes(); }
   E.tick(s, dt); t += dt;
-  const g = E.windGain(s);
-  const owned = s.tension + E.spentTension(s); spend();
-  if (!s.autoWind && g >= Math.max(1, owned)) { E.wind(s); marks.push(`${(t/60).toFixed(1)}m wind#${s.winds} tension ${s.tension}`); spend(); }
-  if (E.canChime(s)) { E.chime(s); marks.push(`${(t/60).toFixed(1)}m CHIME clock ${s.clocks.length}`); spend(); }
-  if (t - lastLog > 300) { lastLog = t; marks.push(`${(t/60).toFixed(1)}m ticks=${s.ticks.toExponential(2)} gears=${s.gears.map(g=>g.bought).join(',')} spring${s.spring} oil${s.oil}`); }
+  spend();
+  if (!s.autoWind && E.windGain(s) >= Math.max(1, s.tension + E.spentTension(s))) { E.wind(s); once('wind', 'first wind'); }
+  if (E.canChime(s) && !s.autoChime) { E.chime(s); }
+  if (s.clocks >= 1) once('c1', 'first clock');
+  if (s.clocks >= E.TOWER_AT && !E.towerOpen(s)) {
+    once('c5', `${E.TOWER_AT} clocks: case 1 opens`);
+    // the bot solves the lock by following hints
+    let h; while ((h = E.lockHint(E.lockState(s, 'case1').pos, 'case1'))) E.lockTurn(s, 'case1', h.i, h.dir);
+  }
+  if (E.towerOpen(s)) once('tower', 'clocktower open');
+  if (s.tower.hours >= 1) once('h1', 'first hour');
+  for (const e of [3, 6]) if (s.tower.hours >= 10 ** e) once('h' + e, `1e${e} hours, clocks=${s.clocks}, chimes=${Math.floor(s.chimes)}, bells=${s.bells}`);
+  if (E.canStrike(s)) { E.strike(s); log(`strike! clocks=${s.clocks}`); }
 }
-console.log(marks.join('\n'));
