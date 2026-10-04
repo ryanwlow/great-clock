@@ -4,12 +4,16 @@ const GEAR_BASE = [10, 100, 1e4, 1e6, 1e9, 1e13, 1e18, 1e24];
 const GEAR_STEP = [1e3, 1e4, 1e5, 1e6, 1e8, 1e10, 1e12, 1e15];
 // Pacing knobs (tools/sim.js tunes these against the target timeline).
 // Target (active play): first wind ~5-7 min, first clock ~1 h, Clocktower ~1.5 h,
-// first strike ~5 h; the whole game (five drawings) is meant to run 30-40 h.
-const TUNE = { speed: 0.3, tension: 1, clockGrowth: 5, towerSpeed: 0.15, strikeAt: 1e9, windAt: 1e6 };
+// first strike ~5 h, city synchronised ~13 h; the whole game (five drawings)
+// is meant to run 30-40 h.
+const TUNE = { speed: 0.3, tension: 1, clockGrowth: 5, towerSpeed: 0.15, strikeAt: 1e9, windAt: 1e6, citySpeed: 0.03, cityGoal: 1e30, driftTime: 90 };
 
 const CHIME_AT = 1e60;   // ticks needed to finish the first clock; each later clock is larger
 const TOWER_AT = 5;      // finished clocks before the master's first case will open
 
+const CITY_NAMES = ['Market', 'Station', 'Cathedral', 'Docks', 'University', 'Observatory'];
+const CITY_BASE = [10, 100, 1e4, 1e6, 1e9, 1e13];
+const CITY_STEP = [1e3, 1e4, 1e5, 1e6, 1e8, 1e10];
 const TOWER_NAMES = ['Pendulum Arbor', 'Hour Wheel', 'Going Barrel', 'Great Turret Wheel'];
 const TOWER_BASE = [1, 10, 300, 1e4];
 const TOWER_STEP = [8, 60, 600, 8000];
@@ -31,15 +35,18 @@ function newGame() {
     autos: {}, autoOn: {},
     winds: 0, clocks: 0, chimes: 0, tempo: 0, autoWind: false,
     tower: newTower(), bells: 0, autoChime: false, autoChimeOn: true, struck: false,
+    city: newCity(), relay: false, relayOn: true,
     locks: {}, journal: [],
     time: 0,
   });
 }
+function newCity() { return { accord: 10, drift: 0, districts: CITY_NAMES.map(() => ({ amount: 0, bought: 0 })) }; }
 function newTower() { return { hours: 0, wheels: TOWER_NAMES.map(() => ({ amount: 0, bought: 0 })) }; }
 // Older saves kept finished clocks as a list.
 function migrate(s) {
   if (Array.isArray(s.clocks)) s.clocks = s.clocks.length;
   if (!s.tower) s.tower = newTower();
+  if (!s.city) s.city = newCity();
   if (!s.locks) s.locks = {};
   if (!s.journal) s.journal = [];
   return s;
@@ -56,6 +63,9 @@ const tempoCost = s => Math.pow(2, s.tempo);
 const benchMult = s => 1 + s.clocks;
 // The tower's hours feed back into every clock below it.
 const hoursMult = s => Math.pow(1 + s.tower.hours, 0.1);
+// Accord from the city's synchronised dials speeds the tower.
+const accordMult = s => s.city ? Math.pow(1 + s.city.accord, 0.12) : 1;
+const cityOpen = s => !!(s.locks.case2 && s.locks.case2.solved);
 const towerOpen = s => !!(s.locks.case1 && s.locks.case1.solved);
 
 function gearMult(s, i) {
@@ -132,7 +142,7 @@ function buyAutoWind(s) { if (s.autoWind || s.chimes < 1) return false; s.chimes
 // ---- Layer 4: the Clocktower ----
 function towerMult(s, i) {
   // Each finished clock lends the tower a tenth more speed: the inner layer drives the outer.
-  return Math.pow(2, Math.floor(s.tower.wheels[i].bought / 10)) * (1 + 0.1 * s.clocks);
+  return Math.pow(2, Math.floor(s.tower.wheels[i].bought / 10)) * (1 + 0.1 * s.clocks) * accordMult(s);
 }
 function towerCost(s, i) { return TOWER_BASE[i] * Math.pow(TOWER_STEP[i], Math.floor(s.tower.wheels[i].bought / 10)); }
 function towerVisible(s, i) { return towerOpen(s) && (i === 0 || s.tower.wheels[i - 1].bought > 0); }
@@ -177,6 +187,42 @@ const LOCKS = {
     page: 'journal2',
   },
 };
+// Case 3: the count wheel (locking plate) that tells a striking train how many
+// blows to give. Notches cut into the rim divide it into runs; each run is
+// one striking. The first notch is cut already.
+LOCKS.case3 = {
+  type: 'count',
+  slots: 12,
+  target: [3, 1, 4, 4],
+  clue: 'Cut the plate so the bell strikes three, then one, then four, then four, and comes round to the start. —M.',
+  page: 'journal3',
+};
+function countState(s) {
+  if (!s.locks.case3) s.locks.case3 = { notches: [true, false, false, false, false, false, false, false, false, false, false, false], solved: false };
+  return s.locks.case3;
+}
+function countRuns(notches) {
+  const runs = []; let n = 0;
+  for (let i = 1; i <= notches.length; i++) { n++; if (i === notches.length || notches[i]) { runs.push(n); n = 0; } }
+  return runs;
+}
+function countToggle(s, i) {
+  const st = countState(s);
+  if (st.solved || i === 0 || !cityDone(s)) return false;
+  st.notches[i] = !st.notches[i];
+  if (countRuns(st.notches).join() === LOCKS.case3.target.join()) {
+    st.solved = true;
+    if (!s.journal.includes(LOCKS.case3.page)) s.journal.push(LOCKS.case3.page);
+  }
+  return true;
+}
+function countHint(s) {
+  const want = [false, false, false, false, false, false, false, false, false, false, false, false];
+  let p = 0; for (const r of LOCKS.case3.target) { want[p] = true; p += r; }
+  const st = countState(s);
+  for (let i = 1; i < 12; i++) if (st.notches[i] !== want[i]) return { slot: i, cut: want[i] };
+  return null;
+}
 const PAGES = {
   journal1: { title: 'Page one: the slowing', text: [
     'Apprentice,',
@@ -189,6 +235,11 @@ const PAGES = {
     'The church tower, the station, the watchmaker\'s window: all a quarter of an hour slow, and all slow together. They are not broken. They are listening to something older and slower than they are.',
     'A tower keeps time for a town. A town has more clocks than any tower can hold. Build me a city, and set every clock in it to yours.',
     '—M.' ] },
+  journal3: { title: 'Page three: the observatory', text: [
+    'The city\'s dials agree with yours now. I could hear it from the observatory hill: every bell in the valley striking together.',
+    'The astronomer here keeps a book of the planets\' positions going back two hundred years. The slowing is in it too. It is not steady. It speeds and slackens with the planets, as if they were wheels in the same train.',
+    'I think the planets are its hands. Build me an orrery, and we will see what it is pointing at.',
+    '—M.' ] },
 };
 function lockState(s, id) {
   if (!s.locks[id]) s.locks[id] = { pos: LOCKS[id].start.slice(), solved: false };
@@ -197,6 +248,7 @@ function lockState(s, id) {
 function lockAvailable(s, id) {
   if (id === 'case1') return s.clocks >= TOWER_AT;
   if (id === 'case2') return s.struck;
+  if (id === 'case3') return cityDone(s);
   return false;
 }
 function lockTurn(s, id, i, dir) {
@@ -307,8 +359,47 @@ function trainHint(s) {
 }
 const hintCost = 1;
 
+// ---- Layer 5: the City ----
+// Dials across six districts are wired to your tower. Each district's dials
+// feed the one before it, as everywhere else; the Market's dials make Accord.
+// Wired dials drift out of step, which cuts their output, until the time
+// signal is sent (by hand, or by the relay).
+const sync = s => 1 - s.city.drift;
+function cityMult(s, i) {
+  return Math.pow(2, Math.floor(s.city.districts[i].bought / 10)) * (1 + Math.log10(1 + s.tower.hours)) * sync(s);
+}
+function cityCost(s, i) {
+  const sets = Math.floor(s.city.districts[i].bought / 10), over = Math.max(0, sets - 10);
+  return CITY_BASE[i] * Math.pow(CITY_STEP[i], sets) * Math.pow(10, over * (over + 1) / 2);
+}
+function cityVisible(s, i) { return cityOpen(s) && (i === 0 || s.city.districts[i - 1].bought > 0); }
+function buyDistrict(s, i, max) {
+  let n = 0;
+  while (cityVisible(s, i)) {
+    const c = cityCost(s, i);
+    if (s.city.accord < c || !isFinite(c)) break;
+    s.city.accord -= c; s.city.districts[i].bought++; s.city.districts[i].amount++; n++;
+    if (!max || n >= 1000) break;
+  }
+  return n;
+}
+function sendSignal(s) { if (!cityOpen(s)) return false; s.city.drift = 0; return true; }
+const relayCost = 1e14;
+function buyRelay(s) { if (s.relay || s.city.accord < relayCost) return false; s.city.accord -= relayCost; s.relay = true; return true; }
+// Latches: once the city is in step, spending accord never undoes it.
+const cityDone = s => s.city.synced || (s.city.accord >= TUNE.cityGoal && (s.city.synced = true));
+
 function tick(s, dt) {
   s.time += dt;
+  if (cityOpen(s)) {
+    const c = s.city, d = c.districts;
+    if (d.some(x => x.amount > 0)) c.drift += (0.8 - c.drift) * Math.min(1, dt / TUNE.driftTime);
+    for (let i = d.length - 1; i >= 0; i--) {
+      if (d[i].amount <= 0) continue;
+      const made = d[i].amount * cityMult(s, i) * TUNE.citySpeed * dt;
+      if (i === 0) c.accord = Math.min(1e300, c.accord + made); else d[i - 1].amount = Math.min(1e300, d[i - 1].amount + made);
+    }
+  }
   // Tower wheels: the arbor makes hours, each wheel turns the one before it.
   if (towerOpen(s)) {
     const w = s.tower.wheels;
@@ -335,6 +426,7 @@ function tick(s, dt) {
     // Auto-wind: wind once a run would at least double your tension.
     if (s.autoWind && windGain(s) >= Math.max(1, s.tension)) wind(s);
     if (s.autoChime && s.autoChimeOn && canChime(s)) chime(s);
+    if (s.relay && s.relayOn && s.city.drift > 0.05) s.city.drift = 0;
   }
 }
 function spentTension(s) {
@@ -347,5 +439,5 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   TUNE, GEAR_NAMES, AUTOMATONS, CHIME_AT, TOWER_AT, LOCKS, newGame, migrate, tick, buyGear, buySet, gearCost, gearMult, gearVisible,
   windGain, wind, canChime, chimeGain, chime, buySpring, buyOil, buyAuto, buyTempo, buyAutoWind,
   springCost, oilCost, tempoCost, spentTension, towerOpen, towerCost, buyTower, buyAutoChime, buyBell, bellCost,
-  canStrike, strike, chimeAt, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
+  canStrike, strike, chimeAt, CITY_NAMES, cityOpen, cityCost, cityVisible, cityMult, buyDistrict, sendSignal, buyRelay, relayCost, cityDone, accordMult, countState, countRuns, countToggle, countHint, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
 };

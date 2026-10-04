@@ -25,8 +25,8 @@ function spendChimes() {
   }
 }
 let lastLog = 0;
-while (t < (+process.env.SIM_HOURS || 2) * 3600 && !s.struck) {
-  if (process.env.SIM_TRACE && t - lastLog > 60) { lastLog = t; log(`  clocks=${s.clocks} hours=${s.tower.hours.toExponential(1)} chimes=${Math.floor(s.chimes)} ticks=${s.ticks.toExponential(1)} spring=${s.spring} tempo=${s.tempo} m1=${E.gearMult(s, 0).toExponential(1)}`); }
+while (t < (+process.env.SIM_HOURS || 2) * 3600 && !E.cityDone(s)) {
+  if (process.env.SIM_TRACE && t - lastLog > 60) { lastLog = t; log(`  accord=${s.city.accord.toExponential(1)} clocks=${s.clocks} hours=${s.tower.hours.toExponential(1)} chimes=${Math.floor(s.chimes)} ticks=${s.ticks.toExponential(1)} spring=${s.spring} tempo=${s.tempo} m1=${E.gearMult(s, 0).toExponential(1)}`); }
   if (Math.round(t * 10) % 5 === 0) { for (let i = 7; i >= 0; i--) while (E.buySet(s, i) > 0) {} spendChimes(); }
   E.tick(s, dt); t += dt;
   spend();
@@ -42,4 +42,12 @@ while (t < (+process.env.SIM_HOURS || 2) * 3600 && !s.struck) {
   if (s.tower.hours >= 1) once('h1', 'first hour');
   for (const e of [3, 6]) if (s.tower.hours >= 10 ** e) once('h' + e, `1e${e} hours, clocks=${s.clocks}, chimes=${Math.floor(s.chimes)}, bells=${s.bells}`);
   if (E.canStrike(s)) { E.strike(s); log(`strike! clocks=${s.clocks}`); }
+  if (s.struck && !E.cityOpen(s)) { [null, 20, 16].forEach((n, i) => E.trainSet(s, i, n)); log('case 2 solved: city open'); }
+  if (E.cityOpen(s)) {
+    if (Math.round(t * 10) % 5 === 0) { if (!s.relay) E.buyRelay(s); for (let i = 5; i >= 0; i--) E.buyDistrict(s, i, true); }
+    if (!s.relay && s.city.drift > 0.3) E.sendSignal(s);   // a player glancing in now and then
+    if (s.relay) once('relay', 'relay bought');
+    for (const e of [10, 20]) if (s.city.accord >= 10 ** e) once('a' + e, `1e${e} accord, districts=${s.city.districts.map(d => d.bought).join(',')}`);
+  }
 }
+if (E.cityDone(s)) log('city synchronised: case 3 opens');
