@@ -170,17 +170,10 @@ const LOCKS = {
     clue: 'If you are reading this, I did not come back. Set the case to the hour I left: a quarter to four, on the night of the twelfth. —M.',
     page: 'journal1',
   },
+  // Case 2 is a different kind of puzzle: a gear train to complete.
   case2: {
-    marks: 12,
-    dials: [
-      { name: 'First quarter', labels: ['1','2','3','4','5','6','7','8','9','10','11','12'] },
-      { name: 'Second quarter', labels: ['1','2','3','4','5','6','7','8','9','10','11','12'] },
-      { name: 'Third quarter', labels: ['1','2','3','4','5','6','7','8','9','10','11','12'] },
-      { name: 'Fourth quarter', labels: ['1','2','3','4','5','6','7','8','9','10','11','12'] },
-    ],
-    start: [7, 0, 10, 5],
-    target: [2, 5, 8, 11],
-    clue: 'Set the quarters the way a tower rings them, three notes to a quarter: three, six, nine, twelve. —M.',
+    type: 'train',
+    clue: 'The bell must turn against the crank, or the tower will ring backwards. Set wheels on the empty pins. —M.',
     page: 'journal2',
   },
 };
@@ -243,6 +236,75 @@ function lockHint(pos, id) {
   }
   return null;
 }
+
+// ---- Case 2: complete the bell train ----
+// A crank (12 teeth) and the bell arbor (30 teeth) sit on fixed pins, with three
+// empty pins between them. Wheels mesh only when their centres are exactly one
+// radius-sum apart, so each pin has one size that fits its neighbours. The lower
+// pin gives a short route that turns the bell the same way as the crank; the
+// two upper pins give the long route that turns it against the crank.
+const TRAIN_SIZES = [12, 16, 20, 24, 28, 32];
+const BELL_TRAIN = (() => {
+  const k = 1;                                   // radius per tooth (drawing scales it)
+  const C = { x: 0, y: 0, n: 12, fixed: true, name: 'Crank' };
+  const B = { x: 70 * k, y: 0, n: 30, fixed: true, name: 'Bell' };
+  const meet = (P, rp, Q, rq, up) => {           // point at rp from P and rq from Q
+    const dx = Q.x - P.x, dy = Q.y - P.y, d = Math.hypot(dx, dy);
+    const a = (rp * rp - rq * rq + d * d) / (2 * d), h = Math.sqrt(Math.max(0, rp * rp - a * a));
+    const mx = P.x + a * dx / d, my = P.y + a * dy / d, sgn = up ? -1 : 1;
+    return { x: mx - sgn * h * dy / d, y: my + sgn * h * dx / d };
+  };
+  const P1 = Object.assign(meet(C, 12 + 24, B, 24 + 30, false), { solveN: 24 });
+  const P2 = { x: 32 * Math.cos(-1.1), y: 32 * Math.sin(-1.1), solveN: 20 };
+  const P3 = Object.assign(meet(P2, 20 + 16, B, 16 + 30, true), { solveN: 16 });
+  return { k, fixed: [C, B], pins: [P1, P2, P3], solution: [null, 20, 16] };
+})();
+function trainGears(pins) {
+  const T = BELL_TRAIN, gs = [T.fixed[0], T.fixed[1]];
+  pins.forEach((n, i) => { if (n) gs.push({ x: T.pins[i].x, y: T.pins[i].y, n, pin: i }); });
+  return gs;
+}
+// Work out which wheels mesh, which collide, and how the train turns.
+function trainEval(pins) {
+  const gs = trainGears(pins), edges = [], clashes = [];
+  for (let a = 0; a < gs.length; a++) for (let b = a + 1; b < gs.length; b++) {
+    const d = Math.hypot(gs[a].x - gs[b].x, gs[a].y - gs[b].y), want = gs[a].n + gs[b].n;
+    if (Math.abs(d - want) < 0.5) edges.push([a, b]);
+    else if (d < want + 3.5) clashes.push([a, b]);      // tooth tips would collide
+  }
+  const dir = new Array(gs.length).fill(0); dir[0] = 1;
+  let jam = clashes.length > 0;
+  const q = [0];
+  while (q.length) {
+    const a = q.shift();
+    for (const [u, v] of edges) {
+      const b = u === a ? v : v === a ? u : -1; if (b < 0) continue;
+      if (!dir[b]) { dir[b] = -dir[a]; q.push(b); } else if (dir[b] === dir[a]) jam = true;
+    }
+  }
+  const bellDir = jam ? 0 : dir[1];
+  return { gs, edges, clashes, dir, jam, driven: !jam && dir[1] !== 0, bellDir, solved: !jam && dir[1] === -1 };
+}
+function trainState(s) {
+  if (!s.locks.case2) s.locks.case2 = { pins: [null, null, null], solved: false };
+  if (!s.locks.case2.pins) s.locks.case2.pins = [null, null, null];   // older saves had dial cases
+  return s.locks.case2;
+}
+function trainSet(s, pin, n) {
+  const st = trainState(s);
+  if (st.solved || !lockAvailable(s, 'case2')) return false;
+  st.pins[pin] = n;
+  if (trainEval(st.pins).solved) {
+    st.solved = true;
+    if (!s.journal.includes(LOCKS.case2.page)) s.journal.push(LOCKS.case2.page);
+  }
+  return true;
+}
+function trainHint(s) {
+  const st = trainState(s), sol = BELL_TRAIN.solution;
+  for (let i = 0; i < sol.length; i++) if (st.pins[i] !== sol[i]) return { pin: i, n: sol[i] };
+  return null;
+}
 const hintCost = 1;
 
 function tick(s, dt) {
@@ -285,5 +347,5 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   TUNE, GEAR_NAMES, AUTOMATONS, CHIME_AT, TOWER_AT, LOCKS, newGame, migrate, tick, buyGear, buySet, gearCost, gearMult, gearVisible,
   windGain, wind, canChime, chimeGain, chime, buySpring, buyOil, buyAuto, buyTempo, buyAutoWind,
   springCost, oilCost, tempoCost, spentTension, towerOpen, towerCost, buyTower, buyAutoChime, buyBell, bellCost,
-  canStrike, strike, chimeAt, lockState, lockTurn, lockHint, lockAvailable,
+  canStrike, strike, chimeAt, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
 };

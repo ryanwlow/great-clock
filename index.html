@@ -133,7 +133,8 @@ button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%;
 /* The master's cases */
 .case { border: 1.5px solid var(--ink); padding: 12px; display: grid; gap: 10px; background: var(--paper); }
 .case .clue { font: 400 18px/1.4 var(--f-hand); color: var(--red); margin: 0; }
-.case canvas { width: 100%; height: auto; aspect-ratio: 520 / 200; max-width: 100%; display: block; }
+.case canvas { width: 100%; height: auto; max-width: 100%; display: block; }
+.case canvas.train { max-width: 360px; margin: 0 auto; cursor: pointer; }
 .dials { display: grid; gap: 6px; }
 .dial-ctl { display: grid; justify-items: center; gap: 4px; font: 400 11px var(--f-num); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim); text-align: center; }
 .dial-ctl .btns { display: flex; gap: 4px; }
@@ -665,6 +666,113 @@ function updateCase(id, box, need) {
   hb.disabled = !avail || st.solved || S.chimes < hintCost;
   hb.hidden = st.solved;
 }
+
+// ---------- case 2: the bell train ----------
+const PIN_NAMES = ['A', 'B', 'C'];
+function buildTrainCase(box) {
+  box.innerHTML = `<p class="clue">${LOCKS.case2.clue}</p>
+    <canvas class="train" width="360" height="300" aria-label="The bell train: a crank, the bell arbor and three empty pins"></canvas>
+    <div class="dials" style="grid-template-columns: repeat(3, minmax(0, 1fr))"></div>
+    <p class="hint" data-k="status"></p>
+    <p class="sealed" hidden></p>
+    <div class="row"><span class="hint" data-k="moves"></span><button class="ghost" data-k="hint">Ask Tock for a hint <span class="c">${hintCost} chime</span></button></div>`;
+  const ctl = box.querySelector('.dials');
+  PIN_NAMES.forEach((nm, i) => {
+    const el = document.createElement('div'); el.className = 'dial-ctl';
+    el.innerHTML = `<span>Pin ${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Smaller wheel on pin ${nm}">‹</button><button class="ghost" data-dir="1" aria-label="Larger wheel on pin ${nm}">›</button></span><span data-k="size">empty</span>`;
+    el.querySelectorAll('button').forEach(b => b.onclick = () => cyclePin(i, +b.dataset.dir));
+    ctl.appendChild(el);
+  });
+  box.querySelector('[data-k=hint]').onclick = () => {
+    const st = trainState(S); if (S.chimes < hintCost || st.solved) return;
+    const h = trainHint(S); if (!h) return;
+    S.chimes -= hintCost;
+    box.querySelector('[data-k=moves]').textContent = h.n ? `Tock says: pin ${PIN_NAMES[h.pin]} wants ${h.n} teeth.` : `Tock says: leave pin ${PIN_NAMES[h.pin]} empty.`;
+    refresh();
+  };
+  box.querySelector('canvas').onclick = e => {
+    // clicking a pin on the drawing tries the next wheel size
+    const c = e.currentTarget, r = c.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * c.width / r.width, my = (e.clientY - r.top) * c.height / r.height;
+    const G = trainGeom();
+    BELL_TRAIN.pins.forEach((p, i) => { if (Math.hypot(G.X(p.x) - mx, G.Y(p.y) - my) < 30) cyclePin(i, 1); });
+  };
+}
+function cyclePin(i, dir) {
+  const st = trainState(S);
+  const opts = [null, ...TRAIN_SIZES];
+  const k = (opts.indexOf(st.pins[i]) + dir + opts.length) % opts.length;
+  if (trainSet(S, i, opts[k])) { if (st.solved) onCaseOpened('case2'); refresh(); save(); }
+}
+function trainGeom() {
+  const T = BELL_TRAIN, all = [...T.fixed, ...T.pins.map(p => ({ x: p.x, y: p.y, n: 32 }))];
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const g of all) { const r = (g.n || 30) + 3; x0 = Math.min(x0, g.x - r); x1 = Math.max(x1, g.x + r); y0 = Math.min(y0, g.y - r); y1 = Math.max(y1, g.y + r); }
+  const W = 360, H = 300, k = Math.min((W - 20) / (x1 - x0), (H - 30) / (y1 - y0));
+  const ox = (W - (x1 - x0) * k) / 2 - x0 * k, oy = (H - (y1 - y0) * k) / 2 - y0 * k;
+  return { k, X: x => ox + x * k, Y: y => oy + y * k };
+}
+let trainPhase = 0;
+function drawTrainCase(box, dt) {
+  const c = box.querySelector('canvas'); if (!c) return;
+  const st = trainState(S), ev = trainEval(st.pins);
+  if (ev.driven) trainPhase += dt * 0.8;
+  const key = st.pins.join() + colorsVersion;
+  if (!ev.driven && c._key === key) return;
+  c._key = key;
+  const x = c.getContext('2d'), G = trainGeom(), k = G.k, add = 0.32 * 2 * Math.PI, ded = 0.42 * 2 * Math.PI;
+  x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
+  // angles: walk the meshes outward from the crank
+  const ang = new Array(ev.gs.length).fill(0); ang[0] = trainPhase;
+  const seen = new Set([0]), q = [0];
+  while (q.length) {
+    const a = q.shift();
+    for (const [u, v] of ev.edges) {
+      const b = u === a ? v : v === a ? u : -1; if (b < 0 || seen.has(b)) continue;
+      const A = ev.gs[a], B = ev.gs[b], th = Math.atan2(B.y - A.y, B.x - A.x);
+      ang[b] = th + Math.PI - Math.PI / B.n + (th - ang[a]) * A.n / B.n; seen.add(b); q.push(b);
+    }
+  }
+  const clash = new Set(ev.clashes.flat());
+  // empty pins
+  BELL_TRAIN.pins.forEach((p, i) => {
+    if (st.pins[i]) return;
+    x.beginPath(); x.arc(G.X(p.x), G.Y(p.y), 5, 0, Math.PI * 2); x.fillStyle = COL.ink; x.fill();
+    x.save(); x.setLineDash([3, 4]); x.strokeStyle = COL.dim; x.beginPath(); x.arc(G.X(p.x), G.Y(p.y), 16, 0, Math.PI * 2); x.stroke(); x.restore();
+  });
+  ev.gs.forEach((g, i) => {
+    x.save(); x.translate(G.X(g.x), G.Y(g.y)); x.scale(k, k);
+    gearPath(x, g.n, g.n, ang[i], add, ded);
+    x.fillStyle = COL.paper; x.fill();
+    if (st.solved || (i === 1 && ev.driven)) { x.fillStyle = COL.wash; x.fill(); }
+    x.lineWidth = 1.3 / k; x.strokeStyle = clash.has(i) ? COL.red : COL.ink; x.stroke();
+    x.beginPath(); x.arc(0, 0, g.n * 0.2, 0, Math.PI * 2); x.lineWidth = 1 / k; x.stroke();
+    x.restore();
+  });
+  // labels
+  x.font = '12px "Courier Prime", "Courier New", monospace'; x.textAlign = 'center'; x.fillStyle = COL.red;
+  const C = BELL_TRAIN.fixed[0], B = BELL_TRAIN.fixed[1];
+  x.fillText('CRANK ↻', G.X(C.x), G.Y(C.y) + (C.n + 6) * k + 10);
+  x.fillText(ev.driven ? (ev.bellDir === -1 ? 'BELL ↺' : 'BELL ↻') : 'BELL', G.X(B.x), G.Y(B.y) + (B.n + 6) * k + 10);
+  BELL_TRAIN.pins.forEach((p, i) => { x.fillStyle = COL.dim; x.fillText(PIN_NAMES[i], G.X(p.x) + 20, G.Y(p.y) - 14); });
+}
+function updateTrainCase(box) {
+  const st = trainState(S), avail = lockAvailable(S, 'case2'), ev = trainEval(st.pins);
+  box.querySelectorAll('.dial-ctl').forEach((el, i) => {
+    el.querySelectorAll('button').forEach(b => setDis(b, !avail || st.solved));
+    setText(el.querySelector('[data-k=size]'), st.pins[i] ? `${st.pins[i]} teeth` : 'empty');
+  });
+  setText(box.querySelector('[data-k=status]'), st.solved ? 'The bell turns against the crank. The case swings open.'
+    : ev.jam ? 'Jammed: two wheels are fighting each other.'
+    : ev.driven ? 'The bell turns, but the same way as the crank.'
+    : 'The crank turns nothing yet.');
+  const sealed = box.querySelector('.sealed');
+  sealed.hidden = avail && !st.solved;
+  setText(sealed, st.solved ? 'The case is open. Its page is in your journal.' : 'Strike the hour first.');
+  const hb = box.querySelector('[data-k=hint]');
+  setDis(hb, !avail || st.solved || S.chimes < hintCost); hb.hidden = st.solved;
+}
+
 function onCaseOpened(id) {
   const page = PAGES[LOCKS[id].page];
   toast(`The case clicks open: ${page.title.toLowerCase()}.`);
@@ -865,7 +973,7 @@ function refreshTower() {
   setTextP('strikeLbl', S.struck ? 'struck' : `${fmt(S.tower.hours)} / ${fmt(TUNE.strikeAt)}`);
   if (S.struck) reveal('case2Box');
   setTextP('case2Lbl', S.locks.case2?.solved ? 'opened' : 'found behind the bell');
-  updateCase('case2', $('case2'), 'Strike the hour first.');
+  updateTrainCase($('case2'));
   const n = noteFor(NOTES2); if ($('note2').textContent !== n) setTextP('note2', n);
 }
 
@@ -952,7 +1060,7 @@ function frame(now) {
     if (!$('case1Box').hidden) drawCase('case1', $('case1'), dt);
   } else if (view === 'tower') {
     drawTower(dt);
-    if (!$('case2Box').hidden) drawCase('case2', $('case2'), dt);
+    if (!$('case2Box').hidden) drawTrainCase($('case2'), dt);
   }
   if (slow) refresh();
   saveT += dt; if (saveT > 5) { saveT = 0; save(); }
@@ -964,7 +1072,7 @@ function start(data) {
   applyTheme(savedTheme());
   gearRows = buildRows($('gears'), GEAR_NAMES, i => { if (buyGear(S, i, false)) flash[i] = 1; }, i => { if (buySet(S, i)) flash[i] = 1; });
   towerRows = buildRows($('towerWheels'), TOWER_NAMES, i => { if (buyTower(S, i, false)) tflash[i] = 1; }, buyTowerSet);
-  buildCase('case1', $('case1')); buildCase('case2', $('case2'));
+  buildCase('case1', $('case1')); buildTrainCase($('case2'));
   bindReset();
   if (S.savedAt && !(data && data.S)) catchUp((Date.now() - S.savedAt) / 1000);
   show(data && data.view ? data.view : 'clock');
