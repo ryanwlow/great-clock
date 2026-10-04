@@ -6,98 +6,103 @@
 <title>The Great Clock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@600;800&family=Barlow+Semi+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,400;0,600;1,400&family=Courier+Prime:wght@400;700&family=Cedarville+Cursive&display=swap">
 <style>
-/* Layout: one blueprint sheet. The machine drawing sits on top, the workbench controls stack below it in two columns that fold to one on phones. Single deliberate night-blueprint look. */
+/* Layout: one sheet of drafting linen, c. 1905. The inked gear-train drawing (with its title block) sits on top; the workshop ledger stacks below in two columns that fold to one on phones. Single deliberate paper-and-ink look. */
 :root {
-  color-scheme: dark;
-  --paper: #123a63;
-  --paper-deep: #0c2a4a;
-  --grid: rgba(190, 220, 245, 0.07);
-  --line: #d4e6f6;
-  --line-dim: rgba(212, 230, 246, 0.55);
-  --line-faint: rgba(212, 230, 246, 0.22);
-  --brass: #e7bb5f;
-  --brass-deep: #b78a33;
-  --ink: #10233a;
-  --warn: #ff9c86;
-  --f-display: "Big Shoulders Stencil Display", "Arial Narrow", Impact, sans-serif;
-  --f-body: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
-  --f-num: "JetBrains Mono", ui-monospace, Menlo, monospace;
-  --f-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+  color-scheme: light;
+  --paper: #ece2c9;
+  --paper-deep: #e2d5b6;
+  --rule: rgba(92, 64, 34, 0.07);
+  --ink: #3a2816;
+  --ink-dim: rgba(58, 40, 22, 0.66);
+  --ink-faint: rgba(58, 40, 22, 0.28);
+  --red: #9e2f22;
+  --brass: #c49a45;
+  --brass-hi: #d9b766;
+  --wash: rgba(196, 154, 69, 0.32);
+  --f-display: "IM Fell English SC", "IM Fell English", Georgia, serif;
+  --f-body: "Spectral", Georgia, "Times New Roman", serif;
+  --f-num: "Courier Prime", "Courier New", Courier, monospace;
+  --f-hand: "Cedarville Cursive", "Segoe Script", "Apple Chancery", cursive;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body {
-  background: var(--paper);
+  background-color: var(--paper);
   background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 24px 24px;
-  color: var(--line);
-  font: 16px/1.4 var(--f-body);
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: var(--ink);
+  font: 16px/1.45 var(--f-body);
   padding: 20px 16px 48px;
 }
 .sheet { max-width: 1040px; margin: 0 auto; display: grid; gap: 18px; }
-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; border-bottom: 1px solid var(--line-faint); padding-bottom: 12px; }
-h1 { font: 800 clamp(34px, 6vw, 56px)/0.9 var(--f-display); letter-spacing: 0.02em; margin: 0; text-transform: uppercase; }
-.plate { font: 500 12px/1.2 var(--f-num); letter-spacing: 0.12em; text-transform: uppercase; color: var(--line-dim); }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; border-bottom: 3px double var(--ink); padding-bottom: 10px; }
+h1 { font: 400 clamp(36px, 6.4vw, 60px)/0.95 var(--f-display); letter-spacing: 0.01em; margin: 0; text-wrap: balance; }
+.plate { font: 400 12px/1.2 var(--f-num); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
 .readout { text-align: right; }
-.readout .big { font: 600 clamp(28px, 5vw, 40px)/1 var(--f-num); color: var(--brass); font-variant-numeric: tabular-nums; }
-.readout .rate { font: 400 13px var(--f-num); color: var(--line-dim); }
+.readout .big { font: 700 clamp(28px, 5vw, 40px)/1 var(--f-num); color: var(--red); font-variant-numeric: tabular-nums; }
+.readout .rate { font: 400 13px var(--f-num); color: var(--ink-dim); }
 
-.stage { position: relative; border: 1px solid var(--line-faint); background: var(--paper-deep); transform-origin: 50% 50%; transition: transform 1.1s cubic-bezier(.6,0,.3,1), opacity 1.1s; }
-.stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 1000 / 340; max-width: 100%; }
+.stage { position: relative; border: 1.5px solid var(--ink); outline: 1px solid var(--ink-faint); outline-offset: 4px; background: var(--paper); transform-origin: 50% 50%; transition: transform 1.1s cubic-bezier(.6,0,.3,1), opacity 1.1s; margin: 5px; }
+.stage canvas { display: block; width: 100%; height: auto; aspect-ratio: 1000 / 380; max-width: 100%; }
 .stage.zoom { transform: scale(0.12) translateY(260%); opacity: 0; }
-.note { position: absolute; left: 14px; top: 34px; max-width: 46%; font: 500 clamp(17px, 2.3vw, 22px)/1.1 var(--f-hand); color: var(--brass); transform: rotate(-1.5deg); text-align: left; pointer-events: none; }
-.stage .tag { position: absolute; left: 12px; top: 10px; }
+.note { position: absolute; left: 16px; top: 36px; max-width: 44%; font: 400 clamp(15px, 2vw, 19px)/1.35 var(--f-hand); color: var(--red); transform: rotate(-1.5deg); pointer-events: none; }
+.stage .tag { position: absolute; left: 14px; top: 10px; }
+.titleblock { position: absolute; right: 0; bottom: 0; display: grid; grid-template-columns: auto auto; font: 400 10px/1.2 var(--f-num); letter-spacing: 0.06em; text-transform: uppercase; border-left: 1.5px solid var(--ink); border-top: 1.5px solid var(--ink); background: var(--paper); }
+.titleblock > div { padding: 4px 8px; border-right: 1px solid var(--ink-faint); border-bottom: 1px solid var(--ink-faint); }
+.titleblock .t { grid-column: span 2; font: 400 15px/1.1 var(--f-display); letter-spacing: 0.02em; text-transform: none; }
+.titleblock b { font-weight: 700; }
 
-.cols { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-@media (max-width: 760px) { .cols { grid-template-columns: minmax(0, 1fr); } .note { max-width: 70%; } }
+.cols { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 760px) { .cols { grid-template-columns: minmax(0, 1fr); } .note { position: static; max-width: none; transform: none; padding: 0 12px 10px; } .stage { display: flex; flex-direction: column; } .stage .tag { position: static; order: -1; padding: 10px 12px 0; } .titleblock { display: none; } }
 section { display: grid; gap: 10px; min-width: 0; }
-h2 { font: 600 24px/1 var(--f-display); text-transform: uppercase; letter-spacing: 0.04em; margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-h2 small { font: 400 12px var(--f-num); letter-spacing: 0.08em; color: var(--line-dim); text-transform: none; }
-.panel { border: 1px solid var(--line-faint); padding: 14px; display: grid; gap: 10px; background: var(--paper); }
-.panel.fresh { animation: fresh 1.6s ease-out; }
-@keyframes fresh { from { box-shadow: 0 0 0 3px var(--brass); } to { box-shadow: 0 0 0 0 transparent; } }
+h2 { font: 400 26px/1 var(--f-display); margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; border-bottom: 1px solid var(--ink); padding-bottom: 4px; }
+h2 small { font: italic 400 14px var(--f-body); color: var(--ink-dim); text-align: right; }
+.panel { padding: 4px 0; display: grid; gap: 10px; }
+.panel.fresh { animation: fresh 1.8s ease-out; }
+@keyframes fresh { from { background: var(--wash); } to { background: transparent; } }
 
-.gear { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; align-items: center; gap: 4px 10px; padding: 6px 0; border-top: 1px dashed var(--line-faint); }
+.gear { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; align-items: center; gap: 4px 10px; padding: 7px 0; border-top: 1px dotted var(--ink-faint); }
 .gear:first-of-type { border-top: 0; }
-.gear .no { font: 600 13px var(--f-num); color: var(--line-dim); }
+.gear .no { font: 700 14px var(--f-num); color: var(--red); }
 .gear .nm { font-weight: 600; }
-.gear .sub { font: 400 12px var(--f-num); color: var(--line-dim); font-variant-numeric: tabular-nums; }
-.gear .teeth { display: inline-flex; gap: 2px; vertical-align: middle; margin-left: 6px; }
-.gear .teeth i { width: 5px; height: 8px; background: var(--line-faint); }
-.gear .teeth i.on { background: var(--brass); }
-.gear.locked { opacity: 0.5; }
-.gear.locked .nm::after { content: " (locked)"; font-weight: 400; color: var(--line-dim); }
+.gear .sub { font: 400 12.5px var(--f-num); color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.gear .jewels { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 8px; }
+.gear .jewels i { width: 6px; height: 6px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--ink-faint); }
+.gear .jewels i.on { background: var(--red); box-shadow: none; }
+.gear.locked { opacity: 0.55; }
+.gear.locked .nm::after { content: " (not yet drawn)"; font-weight: 400; font-style: italic; color: var(--ink-dim); }
 
-button { font: 600 14px/1.1 var(--f-body); color: var(--ink); background: var(--brass); border: 0; padding: 8px 12px; cursor: pointer; min-height: 36px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+button { font: 600 14px/1.1 var(--f-body); color: var(--ink); background: var(--brass); border: 1px solid var(--ink); border-radius: 2px; padding: 7px 12px; cursor: pointer; min-height: 36px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: inset 0 1px 0 var(--brass-hi); }
 button .c { font: 400 11px var(--f-num); }
-button:hover:not(:disabled) { background: var(--line); }
-button:focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
-button:disabled, button.ghost:disabled { background: transparent; color: var(--line-dim); box-shadow: inset 0 0 0 1px var(--line-faint); cursor: default; }
-button.ghost { background: transparent; color: var(--line); box-shadow: inset 0 0 0 1px var(--line-dim); }
-button.big { font: 800 20px/1 var(--f-display); text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 16px; width: 100%; }
+button:hover:not(:disabled) { background: var(--brass-hi); }
+button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+button.ghost { background: transparent; box-shadow: none; }
+button:disabled, button.ghost:disabled { background: transparent; color: var(--ink-dim); border: 1px dashed var(--ink-faint); box-shadow: none; cursor: default; }
+button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
-.meter { height: 8px; background: var(--paper-deep); box-shadow: inset 0 0 0 1px var(--line-faint); }
-.meter > div { height: 100%; background: var(--brass); width: 0; transition: width 0.25s; }
-.hint { font-size: 14px; color: var(--line-dim); margin: 0; }
-.hint b { color: var(--line); font-weight: 600; }
+.meter { height: 9px; border: 1px solid var(--ink); background: repeating-linear-gradient(90deg, transparent 0 9px, var(--ink-faint) 9px 10px); }
+.meter > div { height: 100%; background: var(--red); width: 0; transition: width 0.25s; }
+.hint { font-size: 15px; color: var(--ink-dim); margin: 0; }
+.hint b { color: var(--ink); font-weight: 600; }
 
-.upg { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--line-faint); }
+.upg { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px dotted var(--ink-faint); }
 .upg:first-of-type { border-top: 0; }
 .upg .nm { font-weight: 600; }
-.upg .d { font-size: 13px; color: var(--line-dim); }
-.bot-face { font: 500 18px var(--f-hand); color: var(--brass); }
-.switch { font: 400 12px var(--f-num); }
+.upg .d { font-size: 14px; color: var(--ink-dim); }
+.bot-face { font: 400 19px var(--f-hand); color: var(--red); }
+.switch { font: 400 12px var(--f-num); display: inline-flex; gap: 4px; align-items: center; }
+.switch input { accent-color: var(--red); }
 
-.bench { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
-.clockTile { display: grid; justify-items: center; gap: 4px; font: 400 11px var(--f-num); color: var(--line-dim); text-align: center; }
-.clockTile canvas { width: 64px; height: 64px; }
-.clockTile.empty { opacity: 0.35; }
-.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--brass); color: var(--ink); padding: 10px 16px; font-weight: 600; max-width: calc(100% - 32px); }
-footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; color: var(--line-dim); font-size: 13px; border-top: 1px solid var(--line-faint); padding-top: 10px; }
+.bench { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.clockTile { display: grid; justify-items: center; gap: 4px; font: 400 11px var(--f-num); color: var(--ink-dim); text-align: center; }
+.clockTile canvas { width: 100%; max-width: 64px; height: auto; aspect-ratio: 1; }
+.clockTile.empty { opacity: 0.4; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; font-weight: 600; max-width: calc(100% - 32px); }
+footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; color: var(--ink-dim); font-size: 14px; border-top: 3px double var(--ink); padding-top: 10px; }
 .confirm { display: inline-flex; gap: 6px; align-items: center; }
 @media (prefers-reduced-motion: reduce) { .stage { transition: none; } .panel.fresh { animation: none; } }
 </style>
@@ -107,7 +112,7 @@ footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-betwee
 <div class="sheet">
   <header>
     <div>
-      <div class="plate">Blueprint No. 1 · Pocket watch</div>
+      <div class="plate">Workshop of the late Master · Drawing No. 1</div>
       <h1>The Great Clock</h1>
     </div>
     <div class="readout">
@@ -118,9 +123,14 @@ footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-betwee
   </header>
 
   <div class="stage" id="stage">
-    <canvas id="machine" width="1000" height="340" aria-label="Drawing of the clock's gear train"></canvas>
+    <canvas id="machine" width="1000" height="380" aria-label="Drawing of the clock's gear train"></canvas>
     <div class="plate tag" id="stageTag">Gear train</div>
     <div class="note" id="note"></div>
+    <div class="titleblock" aria-hidden="true">
+      <div class="t">The Great Clock</div>
+      <div>Sheet <b id="tbSheet">1</b> of 5</div><div>Scale full size</div>
+      <div>Drawn: M.</div><div>Traced: Apprentice</div>
+    </div>
   </div>
 
   <div class="cols">
@@ -128,7 +138,7 @@ footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-betwee
       <h2>Gears <small id="gearHint">each gear turns the one before it</small></h2>
       <div class="panel" id="gears"></div>
       <div class="row">
-        <p class="hint">Every 10 of a gear adds a tooth and doubles its speed. Press <b>M</b> to buy all you can.</p>
+        <p class="hint">Every 10 of a gear sets a jewel bearing, which doubles its speed. Press <b>M</b> to buy all you can.</p>
         <button class="ghost" id="buyAll">Buy all</button>
       </div>
     </section>
@@ -195,7 +205,7 @@ function fmt(x) {
 const NOTES = [
   [s => true, 'Every gear turns the one before it. Start small. —M.'],
   [s => s.gears[1].bought > 0, 'The second wheel turns the first. You see it now. —M.'],
-  [s => s.gears[0].bought >= 10, 'Ten of a kind cuts a new tooth. Twice the speed.'],
+  [s => s.gears[0].bought >= 10, 'Ten of a kind earns a jewel bearing. Rubies run smoother.'],
   [s => s.runTicks >= 1e7 || s.winds > 0, 'When the train runs long enough, wind the spring.'],
   [s => s.winds > 0, 'Winding starts the train again, but the spring remembers.'],
   [s => s.autos.pip, 'Pip will mind the small gears. Pip likes to hum.'],
@@ -207,83 +217,140 @@ const NOTES = [
 function currentNote() { let n = NOTES[0][1]; for (const [ok, t] of NOTES) if (ok(S)) n = t; return n; }
 
 // ---------- machine drawing ----------
+// The train is a real mesh: every gear shares one tooth pitch, sits exactly
+// one pitch-radius-sum from its neighbour, and its angle is derived from the
+// pinion's angle through the tooth ratio, so teeth always land in gaps.
 const cv = $('machine'), cx = cv.getContext('2d');
-const RADII = [26, 34, 42, 50, 58, 66, 74, 82];
-const LAYOUT = (() => {
-  const pts = []; let x = 70, y = 200;
-  for (let i = 0; i < 8; i++) {
-    if (i > 0) {
-      const d = RADII[i] + RADII[i - 1] + 6;
-      const ang = (i % 2 ? -1 : 1) * 0.42;
-      x += d * Math.cos(ang); y += d * Math.sin(ang);
-    }
-    pts.push({ x, y, r: RADII[i], a: 0 });
+const PITCH = 14;                                  // arc length of one tooth + gap
+const TEETH = [12, 16, 20, 24, 28, 32, 36, 40];
+const ADD = 0.32 * PITCH, DED = 0.42 * PITCH;      // addendum / dedendum
+const TRAIN = (() => {
+  const g = TEETH.map(n => ({ n, r: n * PITCH / (2 * Math.PI), x: 0, y: 0, theta: 0 }));
+  for (let i = 1; i < g.length; i++) {
+    const th = (i % 2 ? -1 : 1) * 0.5 - 0.06;      // zigzag so the train stays compact
+    const d = g[i - 1].r + g[i].r;
+    g[i].x = g[i - 1].x + d * Math.cos(th); g[i].y = g[i - 1].y + d * Math.sin(th);
+    g[i].theta = th;                                // direction from gear i-1 to gear i
   }
-  return pts;
+  // Fit to the canvas, leaving room for labels and the title block.
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const p of g) { x0 = Math.min(x0, p.x - p.r); x1 = Math.max(x1, p.x + p.r); y0 = Math.min(y0, p.y - p.r); y1 = Math.max(y1, p.y + p.r); }
+  const W = 1000, H = 380, padL = 150, padR = 40, padT = 40, padB = 50;
+  const k = Math.min((W - padL - padR) / (x1 - x0), (H - padT - padB) / (y1 - y0));
+  const ox = padL + ((W - padL - padR) - (x1 - x0) * k) / 2 - x0 * k;
+  const oy = padT + ((H - padT - padB) - (y1 - y0) * k) / 2 - y0 * k;
+  return { g, k, ox, oy };
 })();
+let pinionAngle = 0;
+function trainAngles() {
+  const g = TRAIN.g, a = [pinionAngle];
+  for (let i = 1; i < g.length; i++) {
+    const th = g[i].theta, A = g[i - 1], B = g[i];
+    a[i] = th + Math.PI - Math.PI / B.n + (th - a[i - 1]) * A.n / B.n;
+  }
+  return a;
+}
+
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let COL = {};
-function readColors() { COL = { line: css('--line'), dim: css('--line-faint'), mid: css('--line-dim'), brass: css('--brass'), deep: css('--paper-deep') }; }
+function readColors() { COL = { ink: css('--ink'), dim: css('--ink-dim'), faint: css('--ink-faint'), red: css('--red'), wash: css('--wash'), paper: css('--paper'), brass: css('--brass') }; }
 
-function drawGear(ctx, x, y, r, a, teeth, owned, hi) {
-  ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+function gearPath(ctx, n, r, a) {
+  const rt = r + ADD, rr = r - DED, w = Math.PI / n;
   ctx.beginPath();
-  const n = teeth, inner = r - 6;
-  for (let k = 0; k < n * 2; k++) {
-    const ang = (k / (n * 2)) * Math.PI * 2;
-    const rr = k % 2 ? inner : r;
-    const a0 = ang - Math.PI / (n * 2) * 0.55, a1 = ang + Math.PI / (n * 2) * 0.55;
-    ctx.lineTo(Math.cos(a0) * rr, Math.sin(a0) * rr);
-    ctx.lineTo(Math.cos(a1) * rr, Math.sin(a1) * rr);
+  for (let t = 0; t < n; t++) {
+    const c = a + t * 2 * Math.PI / n;
+    const pts = [[rr, c - 0.62 * w], [rt, c - 0.3 * w], [rt, c + 0.3 * w], [rr, c + 0.62 * w]];
+    for (const [rad, ang] of pts) ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
   }
   ctx.closePath();
-  if (owned) { ctx.fillStyle = hi ? COL.brass : COL.deep; ctx.fill(); }
-  ctx.setLineDash(owned ? [] : [4, 5]);
-  ctx.lineWidth = 1.5; ctx.strokeStyle = owned ? (hi ? COL.brass : COL.line) : COL.dim; ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.beginPath(); ctx.arc(0, 0, r * 0.32, 0, Math.PI * 2);
-  ctx.strokeStyle = owned ? (hi ? COL.deep : COL.mid) : COL.dim; ctx.stroke();
-  for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(k * Math.PI / 2) * r * 0.32, Math.sin(k * Math.PI / 2) * r * 0.32); ctx.stroke(); }
-  ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fillStyle = owned ? COL.brass : COL.dim; ctx.fill();
+}
+function centreLines(ctx, r) {
+  ctx.save(); ctx.setLineDash([10, 3, 2, 3]); ctx.strokeStyle = COL.faint; ctx.lineWidth = 0.8;
+  const L = r + ADD + 10;
+  ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(L, 0); ctx.moveTo(0, -L); ctx.lineTo(0, L); ctx.stroke();
+  ctx.restore();
+}
+function drawGear(ctx, p, a, state, hi) {
+  ctx.save(); ctx.translate(p.x, p.y);
+  centreLines(ctx, p.r);
+  if (state === 'planned') {
+    // Unbuilt parts are drawn the way a draughtsman shows them: a chain-dotted pitch circle.
+    ctx.setLineDash([8, 3, 2, 3]); ctx.strokeStyle = COL.dim; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  } else {
+    gearPath(ctx, p.n, p.r, a);
+    ctx.fillStyle = hi ? COL.wash : COL.paper; ctx.fill();
+    if (hi) { ctx.fillStyle = COL.wash; ctx.fill(); }
+    ctx.lineWidth = 1.4; ctx.strokeStyle = COL.ink; ctx.stroke();
+    // rim, spokes and hub
+    const rim = p.r - DED - 4, hub = Math.max(5, p.r * 0.18);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, 0, rim, 0, Math.PI * 2); ctx.stroke();
+    const spokes = p.n >= 24 ? 5 : 4;
+    for (let k = 0; k < spokes; k++) {
+      const s = a + k * 2 * Math.PI / spokes;
+      ctx.beginPath(); ctx.moveTo(Math.cos(s) * hub, Math.sin(s) * hub); ctx.lineTo(Math.cos(s) * rim, Math.sin(s) * rim); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(0, 0, hub, 0, Math.PI * 2); ctx.fillStyle = COL.paper; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI * 2); ctx.fillStyle = COL.ink; ctx.fill();
+  }
   ctx.restore();
 }
 
 let flash = new Array(8).fill(0);
 function drawMachine(dt) {
   const W = cv.width, H = cv.height;
+  cx.setTransform(1, 0, 0, 1, 0, 0);
   cx.clearRect(0, 0, W, H);
-  // dimension line under the train
-  cx.strokeStyle = COL.dim; cx.lineWidth = 1; cx.setLineDash([2, 6]);
-  cx.beginPath(); cx.moveTo(30, 320); cx.lineTo(W - 30, 320); cx.stroke(); cx.setLineDash([]);
-  cx.font = '12px "JetBrains Mono", monospace'; cx.fillStyle = COL.mid;
-  for (let i = 0; i < 8; i++) {
-    const p = LAYOUT[i], g = S.gears[i];
-    const prod = g.amount * gearMult(S, i);
-    const speed = g.amount > 0 ? (0.25 + 0.18 * Math.log10(1 + prod)) : 0;
-    p.a += speed * dt * (i % 2 ? -1 : 1) * (26 / p.r);
+  // Pinion speed follows the train's output; every other gear follows by ratio.
+  const rate = S.gears[0].amount * gearMult(S, 0);
+  if (S.gears[0].amount > 0) pinionAngle += dt * (0.35 + 0.22 * Math.log10(1 + rate));
+  const ang = trainAngles();
+  cx.setTransform(TRAIN.k, 0, 0, TRAIN.k, TRAIN.ox, TRAIN.oy);
+  const lw = 1 / TRAIN.k;
+  for (let i = 7; i >= 0; i--) {
+    const p = TRAIN.g[i], g = S.gears[i];
     flash[i] = Math.max(0, flash[i] - dt * 2);
-    if (!gearVisible(S, i) && g.amount === 0 && !(i > 0 && S.gears[i - 1].amount > 0)) continue;
-    drawGear(cx, p.x, p.y, p.r, p.a, Math.round(p.r / 4.5), g.amount > 0, flash[i] > 0);
-    cx.fillText(String(i + 1), p.x - 4, p.y + p.r + 18);
+    const built = g.amount > 0;
+    const planned = !built && (i === 0 || S.gears[i - 1].amount > 0);
+    if (!built && !planned) continue;
+    drawGear(cx, p, ang[i], built ? 'built' : 'planned', flash[i] > 0);
   }
-  // escapement output: a little tick needle at the pinion
-  const p0 = LAYOUT[0];
-  const sway = S.gears[0].amount > 0 ? Math.sin(performance.now() / 180) * 0.5 : 0;
-  cx.save(); cx.translate(p0.x, p0.y - p0.r - 40); cx.rotate(sway);
-  cx.strokeStyle = COL.brass; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(0, 0); cx.lineTo(0, 30); cx.stroke();
-  cx.beginPath(); cx.arc(0, 0, 4, 0, Math.PI * 2); cx.fillStyle = COL.brass; cx.fill();
+  // Labels in red ink: number and tooth count, with a short leader.
+  cx.setTransform(1, 0, 0, 1, 0, 0);
+  cx.font = '13px "Courier Prime", "Courier New", monospace'; cx.textAlign = 'center';
+  for (let i = 0; i < 8; i++) {
+    const p = TRAIN.g[i], g = S.gears[i];
+    if (!(g.amount > 0 || i === 0 || S.gears[i - 1].amount > 0)) continue;
+    const X = TRAIN.ox + p.x * TRAIN.k, Y = TRAIN.oy + (p.y + p.r + ADD) * TRAIN.k;
+    const up = i % 2 === 1;   // odd gears sit high, label above
+    const ly = up ? TRAIN.oy + (p.y - p.r - ADD) * TRAIN.k - 10 : Y + 18;
+    cx.fillStyle = COL.red; cx.fillText(`${i + 1} · ${p.n}T`, X, ly);
+  }
+  // Escapement: a pallet that rocks on the pinion's beat.
+  const p0 = TRAIN.g[0];
+  const X0 = TRAIN.ox + (p0.x - p0.r - ADD) * TRAIN.k - 34, Y0 = TRAIN.oy + p0.y * TRAIN.k - 30;
+  const sway = S.gears[0].amount > 0 ? Math.sin(pinionAngle * p0.n / 2) * 0.28 : 0;
+  cx.save(); cx.translate(X0, Y0); cx.rotate(sway);
+  cx.strokeStyle = COL.ink; cx.lineWidth = 1.4;
+  cx.beginPath(); cx.moveTo(-18, 22); cx.lineTo(0, 0); cx.lineTo(18, 22); cx.stroke();
+  cx.beginPath(); cx.moveTo(0, 0); cx.lineTo(0, -16); cx.stroke();
+  cx.beginPath(); cx.arc(0, 0, 3, 0, Math.PI * 2); cx.fillStyle = COL.red; cx.fill();
   cx.restore();
 }
 
 function drawFace(c, t, n) {
-  const x = c.getContext('2d'), w = c.width, r = w / 2 - 3;
+  const x = c.getContext('2d'), w = c.width, r = w / 2 - 4;
   x.clearRect(0, 0, w, w);
   x.save(); x.translate(w / 2, w / 2);
-  x.beginPath(); x.arc(0, 0, r, 0, Math.PI * 2); x.fillStyle = COL.deep; x.fill(); x.strokeStyle = COL.brass; x.lineWidth = 2; x.stroke();
-  for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; x.beginPath(); x.moveTo(Math.cos(a) * r * 0.8, Math.sin(a) * r * 0.8); x.lineTo(Math.cos(a) * r * 0.92, Math.sin(a) * r * 0.92); x.strokeStyle = COL.mid; x.lineWidth = 1.5; x.stroke(); }
-  const sec = t * (1 + n * 0.3), hand = (a, l, wd, col) => { x.save(); x.rotate(a); x.beginPath(); x.moveTo(0, 4); x.lineTo(0, -l); x.strokeStyle = col; x.lineWidth = wd; x.stroke(); x.restore(); };
-  hand(sec / 60 * Math.PI * 2 / 12, r * 0.5, 2.5, COL.line);
-  hand(sec * Math.PI * 2 / 60, r * 0.78, 1.2, COL.brass);
+  x.beginPath(); x.arc(0, 0, r, 0, Math.PI * 2); x.fillStyle = COL.paper; x.fill(); x.strokeStyle = COL.ink; x.lineWidth = 2.5; x.stroke();
+  x.beginPath(); x.arc(0, 0, r - 7, 0, Math.PI * 2); x.lineWidth = 1; x.stroke();
+  for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; x.beginPath(); x.moveTo(Math.cos(a) * r * 0.72, Math.sin(a) * r * 0.72); x.lineTo(Math.cos(a) * (r - 7), Math.sin(a) * (r - 7)); x.strokeStyle = COL.ink; x.lineWidth = k % 3 ? 1 : 2.5; x.stroke(); }
+  const sec = t * (1 + n * 0.3), hand = (a, l, wd, col) => { x.save(); x.rotate(a); x.beginPath(); x.moveTo(0, 6); x.lineTo(0, -l); x.strokeStyle = col; x.lineWidth = wd; x.stroke(); x.restore(); };
+  hand(sec / 60 * Math.PI * 2 / 12, r * 0.5, 3, COL.ink);
+  hand(sec * Math.PI * 2 / 60, r * 0.8, 1.5, COL.red);
+  x.beginPath(); x.arc(0, 0, 3, 0, Math.PI * 2); x.fillStyle = COL.ink; x.fill();
   x.restore();
 }
 
@@ -294,10 +361,10 @@ function buildGears() {
   GEAR_NAMES.forEach((nm, i) => {
     const row = document.createElement('div'); row.className = 'gear';
     row.innerHTML = `<div class="no">${i + 1}</div>
-      <div><div class="nm">${nm}<span class="teeth"></span></div><div class="sub"></div></div>
+      <div><div class="nm">${nm}<span class="jewels" title="Jewel bearings"></span></div><div class="sub"></div></div>
       <button data-k="one"><span>Buy 1</span><span class="c"></span></button>
       <button data-k="set" class="ghost"><span>To 10</span><span class="c"></span></button>`;
-    const teeth = row.querySelector('.teeth'); for (let k = 0; k < 10; k++) teeth.appendChild(document.createElement('i'));
+    const jw = row.querySelector('.jewels'); for (let k = 0; k < 10; k++) jw.appendChild(document.createElement('i'));
     row.querySelector('[data-k=one]').onclick = () => { if (buyGear(S, i, false)) flash[i] = 1; refresh(); };
     row.querySelector('[data-k=set]').onclick = () => { if (buySet(S, i)) flash[i] = 1; refresh(); };
     box.appendChild(row); gearRows.push(row);
@@ -317,7 +384,7 @@ function renderShop() {
     el.appendChild(b); box.appendChild(el);
   };
   add(`Tighter spring · level ${S.spring}`, `Every gear runs ×3 faster per level. Now ×${fmt(Math.pow(3, S.spring))}.`, springCost(S), S.tension >= springCost(S), false, () => buySpring(S));
-  if (S.winds >= 2 || S.oil > 0 || S.clocks.length) add(`Oiled teeth · ${S.oil}/3`, `Each tooth multiplies by ${(2 + 0.5 * Math.min(S.oil + 1, 3)).toFixed(1)} instead of ${(2 + 0.5 * S.oil).toFixed(1)}.`, oilCost(S), S.tension >= oilCost(S), S.oil >= 3, () => buyOil(S));
+  if (S.winds >= 2 || S.oil > 0 || S.clocks.length) add(`Oiled pivots · ${S.oil}/3`, `Each jewel multiplies by ${(2 + 0.5 * Math.min(S.oil + 1, 3)).toFixed(1)} instead of ${(2 + 0.5 * S.oil).toFixed(1)}.`, oilCost(S), S.tension >= oilCost(S), S.oil >= 3, () => buyOil(S));
   for (const a of AUTOMATONS) {
     let sw = null;
     if (S.autos[a.id]) {
@@ -362,7 +429,7 @@ function refresh() {
     row.hidden = !vis && !(i > 0 && gearVisible(S, i - 1));
     row.classList.toggle('locked', !vis);
     const set = g.bought % 10;
-    row.querySelectorAll('.teeth i').forEach((t, k) => t.classList.toggle('on', k < set));
+    row.querySelectorAll('.jewels i').forEach((t, k) => t.classList.toggle('on', k < set));
     row.querySelector('.sub').textContent = vis ? `${fmt(g.amount)} turning · ×${fmt(gearMult(S, i))}` : `buy one ${GEAR_NAMES[i - 1]} first`;
     const cost = gearCost(S, i), toSet = 10 - set;
     const b1 = row.querySelector('[data-k=one]'), b2 = row.querySelector('[data-k=set]');
@@ -398,7 +465,7 @@ function refresh() {
   if (benchKey !== lastBenchKey && !$('benchBox').hidden) { lastBenchKey = benchKey; renderBench(); }
 
   const n = currentNote(); if ($('note').textContent !== n) $('note').textContent = n;
-  $('stageTag').textContent = S.clocks.length ? `Clock No. ${S.clocks.length + 1} · gear train` : 'Gear train';
+  $('stageTag').textContent = S.clocks.length ? `Clock No. ${S.clocks.length + 1} · Gear train` : 'Gear train';
 }
 
 let toastT;
@@ -427,7 +494,7 @@ $('chimeBtn').onclick = () => {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   stage.classList.add('zoom');
   setTimeout(() => {
-    chime(S); LAYOUT.forEach(p => p.a = 0); lastShopKey = ''; lastBenchKey = '';
+    chime(S); lastShopKey = ''; lastBenchKey = '';
     stage.style.transition = 'none'; stage.classList.remove('zoom'); void stage.offsetWidth; stage.style.transition = '';
     refresh(); save();
     toast(`Clock No. ${S.clocks.length} chimes. It's on the workbench, keeping time.`);
