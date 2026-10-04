@@ -1056,6 +1056,13 @@ function renderTowerShop() {
     sw.querySelector('input').onchange = e => { S.autoChimeOn = e.target.checked; };
   }
   upgradeRow(box, 'The tower calls the hour', 'Finishes each clock the moment it is ready and brings it home to the bench.', S.autoChime ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${autoChimeCost} chimes</span>`, S.autoChime || S.chimes < autoChimeCost, () => buyAutoChime(S), sw);
+  let gsw = null;
+  if (S.governor) {
+    gsw = document.createElement('label'); gsw.className = 'switch';
+    gsw.innerHTML = `<input type="checkbox" id="auto-governor" ${S.governorOn ? 'checked' : ''}> working`;
+    gsw.querySelector('input').onchange = e => { S.governorOn = e.target.checked; };
+  }
+  upgradeRow(box, 'Spring governor', 'Spends tension for you as it comes in: the tighter spring first, then oil.', S.governor ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${governorCost} chimes</span>`, S.governor || S.chimes < governorCost, () => buyGovernor(S), gsw);
   upgradeRow(box, `Louder bells · level ${S.bells}`, `Each finished clock rings ×2 more chimes per level. Now ×${fmt(Math.pow(2, S.bells))}.`, `<span>Buy</span><span class="c">${fmt(bellCost(S))} chimes</span>`, S.chimes < bellCost(S), () => buyBell(S));
 }
 
@@ -1067,6 +1074,13 @@ function renderCityShop() {
     sw.innerHTML = `<input type="checkbox" id="auto-relay" ${S.relayOn ? 'checked' : ''}> working`;
     sw.querySelector('input').onchange = e => { S.relayOn = e.target.checked; };
   }
+  let rsw = null;
+  if (S.ringer) {
+    rsw = document.createElement('label'); rsw.className = 'switch';
+    rsw.innerHTML = `<input type="checkbox" id="auto-ringer" ${S.ringerOn ? 'checked' : ''}> working`;
+    rsw.querySelector('input').onchange = e => { S.ringerOn = e.target.checked; };
+  }
+  upgradeRow(box, 'The bell-ringer', 'Spends your chimes as they come in: louder bells and tempo first, then turret wheels.', S.ringer ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${fmt(ringerCost)} accord</span>`, S.ringer || S.city.accord < ringerCost, () => buyRinger(S), rsw);
   upgradeRow(box, 'Synchronome relay', 'A master-clock relay that sends the time signal for you whenever the city starts to drift.', S.relay ? '<span>Owned</span>' : `<span>Buy</span><span class="c">${fmt(relayCost)} accord</span>`, S.relay || S.city.accord < relayCost, () => buyRelay(S), sw);
 }
 let lastCityKey = '';
@@ -1081,7 +1095,7 @@ function refreshCity() {
   setWidth($('syncMeter'), syncPct);
   setHTML($('syncHint'), S.relay ? 'The relay keeps every dial in step.' : `Wired dials drift, and drifting dials make less accord. The city is <b>${syncPct}%</b> in step.`);
   setDis($('signalBtn'), !S.city.districts[0].amount || S.city.drift < 0.01);
-  const ck = [S.relay, S.city.accord >= relayCost].join('|');
+  const ck = [S.relay, S.ringer, S.city.accord >= relayCost, S.city.accord >= ringerCost].join('|');
   if (ck !== lastCityKey) { lastCityKey = ck; renderCityShop(); }
   setText($('goalLbl'), cityDone(S) ? 'in step' : `${fmt(S.city.accord)} / ${fmt(TUNE.cityGoal)}`);
   setHTML($('goalHint'), `At <b>${fmt(TUNE.cityGoal)} accord</b> every clock in the city keeps your time. Accord also makes the tower turn <b>×${fmt(accordMult(S))}</b> faster.`);
@@ -1172,7 +1186,7 @@ function refreshTower() {
   });
   setTextP('hoursLbl', `${fmt(S.chimes)} chime${S.chimes === 1 ? '' : 's'}`);
   setHTMLP('hoursHint', `The tower has kept <b>${fmt(S.tower.hours)} hours</b>, which makes every gear in your clocks run <b>×${fmt(hoursMult(S))}</b>.`);
-  const tk = [S.autoChime, S.bells, S.chimes >= autoChimeCost, S.chimes >= bellCost(S)].join('|');
+  const tk = [S.autoChime, S.governor, S.bells, S.chimes >= autoChimeCost, S.chimes >= governorCost, S.chimes >= bellCost(S)].join('|');
   if (tk !== lastTowerKey) { lastTowerKey = tk; renderTowerShop(); }
   setWidth($('strikeMeter'), Math.min(100, Math.log10(Math.max(1, S.tower.hours)) / Math.log10(TUNE.strikeAt) * 100));
   setDis($('strikeBtn'), !canStrike(S));

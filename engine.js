@@ -36,6 +36,7 @@ function newGame() {
     winds: 0, clocks: 0, chimes: 0, tempo: 0, autoWind: false,
     tower: newTower(), bells: 0, autoChime: false, autoChimeOn: true, struck: false,
     city: newCity(), relay: false, relayOn: true,
+    governor: false, governorOn: true, ringer: false, ringerOn: true,
     locks: {}, journal: [],
     time: 0,
   });
@@ -158,6 +159,10 @@ function buyTower(s, i, max) {
 }
 const autoChimeCost = 10;
 const bellCost = s => 5 * Math.pow(3, s.bells);
+// The governor spends tension for you: tightest spring first, then oil.
+const governorCost = 25;
+function buyGovernor(s) { if (s.governor || s.chimes < governorCost) return false; s.chimes -= governorCost; s.governor = true; return true; }
+function runGovernor(s) { let n = 0; while (n < 50 && (buySpring(s) || buyOil(s))) n++; return n; }
 function buyAutoChime(s) { if (s.autoChime || s.chimes < autoChimeCost) return false; s.chimes -= autoChimeCost; s.autoChime = true; return true; }
 function buyBell(s) { const c = bellCost(s); if (s.chimes < c) return false; s.chimes -= c; s.bells++; return true; }
 function canStrike(s) { return !s.struck && s.tower.hours >= TUNE.strikeAt; }
@@ -384,6 +389,15 @@ function buyDistrict(s, i, max) {
   return n;
 }
 function sendSignal(s) { if (!cityOpen(s)) return false; s.city.drift = 0; return true; }
+// The bell-ringer spends chimes for you: bells, tempo, then turret wheels (largest first).
+const ringerCost = 1e8;
+function buyRinger(s) { if (s.ringer || s.city.accord < ringerCost) return false; s.city.accord -= ringerCost; s.ringer = true; return true; }
+function runRinger(s) {
+  let n = 0;
+  while (n < 50 && (buyBell(s) || buyTempo(s))) n++;
+  for (let i = 3; i >= 0; i--) n += buyTower(s, i, true);
+  return n;
+}
 const relayCost = 1e14;
 function buyRelay(s) { if (s.relay || s.city.accord < relayCost) return false; s.city.accord -= relayCost; s.relay = true; return true; }
 // Latches: once the city is in step, spending accord never undoes it.
@@ -426,6 +440,8 @@ function tick(s, dt) {
     // Auto-wind: wind once a run would at least double your tension.
     if (s.autoWind && windGain(s) >= Math.max(1, s.tension)) wind(s);
     if (s.autoChime && s.autoChimeOn && canChime(s)) chime(s);
+    if (s.governor && s.governorOn) runGovernor(s);
+    if (s.ringer && s.ringerOn) runRinger(s);
     if (s.relay && s.relayOn && s.city.drift > 0.05) s.city.drift = 0;
   }
 }
@@ -439,5 +455,5 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   TUNE, GEAR_NAMES, AUTOMATONS, CHIME_AT, TOWER_AT, LOCKS, newGame, migrate, tick, buyGear, buySet, gearCost, gearMult, gearVisible,
   windGain, wind, canChime, chimeGain, chime, buySpring, buyOil, buyAuto, buyTempo, buyAutoWind,
   springCost, oilCost, tempoCost, spentTension, towerOpen, towerCost, buyTower, buyAutoChime, buyBell, bellCost,
-  canStrike, strike, chimeAt, CITY_NAMES, cityOpen, cityCost, cityVisible, cityMult, buyDistrict, sendSignal, buyRelay, relayCost, cityDone, accordMult, countState, countRuns, countToggle, countHint, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
+  canStrike, strike, chimeAt, CITY_NAMES, cityOpen, cityCost, cityVisible, cityMult, buyDistrict, sendSignal, buyRelay, relayCost, governorCost, buyGovernor, runGovernor, ringerCost, buyRinger, runRinger, cityDone, accordMult, countState, countRuns, countToggle, countHint, BELL_TRAIN, trainEval, trainSet, trainState, trainHint, lockState, lockTurn, lockHint, lockAvailable,
 };
