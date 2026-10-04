@@ -6,7 +6,7 @@
 <title>The Great Clock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,400;0,600;1,400&family=Courier+Prime:wght@400;700&family=Cedarville+Cursive&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Cutive+Mono&family=Pinyon+Script&display=swap">
 <style>
 /* Layout: one sheet of drafting linen, c. 1905 (or the same sheet by gaslight).
    The inked drawing of the current layer sits on top with its title block; the
@@ -22,23 +22,26 @@
   --brass-hi: #d9b766;
   --on-brass: #2b1c0e;
   --wash: rgba(196, 154, 69, 0.32);
-  --f-display: "IM Fell English SC", "IM Fell English", Georgia, serif;
-  --f-body: "Spectral", Georgia, "Times New Roman", serif;
-  --f-num: "Courier Prime", "Courier New", Courier, monospace;
-  --f-hand: "Cedarville Cursive", "Segoe Script", "Apple Chancery", cursive;
+  --slip: #f4ecd4;
+  /* Caslon for titles, a Victorian textbook face for prose, a draughtsman's
+     typewriter for figures, and copperplate for the master's hand. */
+  --f-display: "Libre Caslon Display", "Old Standard TT", Georgia, serif;
+  --f-body: "Old Standard TT", Georgia, "Times New Roman", serif;
+  --f-num: "Cutive Mono", "Courier New", Courier, monospace;
+  --f-hand: "Pinyon Script", "Apple Chancery", "Segoe Script", cursive;
 }
-/* Lamplight: the same drawing on dark oiled board, inked in chalk and vermilion. */
+/* Lamplight: the same drawing on dark oiled board, inked in chalk and copper. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #1e1812; --rule: rgba(232, 214, 180, 0.045); --ink: #eadfc4; --ink-dim: rgba(234, 223, 196, 0.68);
-    --ink-faint: rgba(234, 223, 196, 0.24); --red: #e48a6c; --brass: #c99a45; --brass-hi: #dfba64; --on-brass: #22170b;
-    --wash: rgba(201, 154, 69, 0.22); color-scheme: dark;
+    --ink-faint: rgba(234, 223, 196, 0.24); --red: #cf8a4f; --brass: #c99a45; --brass-hi: #dfba64; --on-brass: #22170b;
+    --wash: rgba(201, 154, 69, 0.22); --slip: #2b241b; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --paper: #1e1812; --rule: rgba(232, 214, 180, 0.045); --ink: #eadfc4; --ink-dim: rgba(234, 223, 196, 0.68);
-  --ink-faint: rgba(234, 223, 196, 0.24); --red: #e48a6c; --brass: #c99a45; --brass-hi: #dfba64; --on-brass: #22170b;
-  --wash: rgba(201, 154, 69, 0.22); color-scheme: dark;
+  --ink-faint: rgba(234, 223, 196, 0.24); --red: #cf8a4f; --brass: #c99a45; --brass-hi: #dfba64; --on-brass: #22170b;
+  --wash: rgba(201, 154, 69, 0.22); --slip: #2b241b; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -68,7 +71,7 @@ nav button:hover:not(:disabled):not([aria-selected="true"]) { background: var(--
 .stage { position: relative; border: 1.5px solid var(--ink); outline: 1px solid var(--ink-faint); outline-offset: 4px; background: var(--paper); transform-origin: 50% 50%; transition: transform 1.1s cubic-bezier(.6,0,.3,1), opacity 1.1s; margin: 5px; }
 .stage canvas { will-change: transform; display: block; width: 100%; height: auto; aspect-ratio: 1000 / 380; max-width: 100%; }
 .stage.zoom { transform: scale(0.12) translateY(260%); opacity: 0; }
-.note { position: absolute; left: 16px; top: 36px; max-width: 40%; font: 400 clamp(15px, 2vw, 19px)/1.35 var(--f-hand); color: var(--red); transform: rotate(-1.5deg); pointer-events: none; }
+.note { position: absolute; left: 16px; top: 36px; max-width: 40%; font: 400 clamp(17px, 2.3vw, 22px)/1.35 var(--f-hand); color: var(--red); transform: rotate(-1.5deg); pointer-events: none; }
 .stage .tag { position: absolute; left: 14px; top: 10px; }
 .titleblock { position: absolute; right: 0; bottom: 0; display: grid; grid-template-columns: auto auto; font: 400 10px/1.2 var(--f-num); letter-spacing: 0.06em; text-transform: uppercase; border-left: 1.5px solid var(--ink); border-top: 1.5px solid var(--ink); background: var(--paper); }
 .titleblock > div { padding: 4px 8px; border-right: 1px solid var(--ink-faint); border-bottom: 1px solid var(--ink-faint); }
@@ -103,14 +106,16 @@ h2 small { font: italic 400 14px var(--f-body); color: var(--ink-dim); text-alig
 .gear.locked { opacity: 0.55; }
 .gear.locked .nm::after { content: " (not yet drawn)"; font-weight: 400; font-style: italic; color: var(--ink-dim); }
 
-button { font: 600 14px/1.1 var(--f-body); color: var(--on-brass); background: var(--brass); border: 1px solid var(--ink); border-radius: 2px; padding: 7px 12px; cursor: pointer; min-height: 36px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: inset 0 1px 0 var(--brass-hi); }
+button { font: 700 14px/1.1 var(--f-body); color: var(--ink); background: var(--wash); border: 1px solid var(--ink); border-radius: 0; padding: 7px 12px; cursor: pointer; min-height: 36px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--ink); }
 button .c { font: 400 11px var(--f-num); }
-button:hover:not(:disabled) { background: var(--brass-hi); }
+button:hover:not(:disabled) { background: var(--brass); color: var(--on-brass); }
 button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 button.ghost { background: transparent; color: var(--ink); box-shadow: none; }
 button.ghost:hover:not(:disabled) { background: var(--wash); }
 button:disabled, button.ghost:disabled { background: transparent; color: var(--ink-dim); border: 1px dashed var(--ink-faint); box-shadow: none; cursor: default; }
-button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%; }
+button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%; background: var(--ink); color: var(--paper); box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 0 4px var(--paper); }
+button.big:disabled { background: transparent; color: var(--ink-dim); border: 1px dashed var(--ink-faint); box-shadow: none; }
+button.big:hover:not(:disabled) { background: var(--red); color: var(--paper); box-shadow: inset 0 0 0 3px var(--red), inset 0 0 0 4px var(--paper); }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 .meter { height: 9px; border: 1px solid var(--ink); background: repeating-linear-gradient(90deg, transparent 0 9px, var(--ink-faint) 9px 10px); }
 .meter > div { height: 100%; background: var(--red); width: 0; }
@@ -132,7 +137,7 @@ button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%;
 
 /* The master's cases */
 .case { border: 1.5px solid var(--ink); padding: 12px; display: grid; gap: 10px; background: var(--paper); }
-.case .clue { font: 400 18px/1.4 var(--f-hand); color: var(--red); margin: 0; }
+.case .clue { font: 400 21px/1.4 var(--f-hand); color: var(--red); margin: 0; }
 .case canvas { width: 100%; height: auto; max-width: 100%; display: block; }
 .case canvas.train { max-width: 360px; margin: 0 auto; cursor: pointer; }
 .dials { display: grid; gap: 6px; }
@@ -148,14 +153,41 @@ button.big { font: 400 22px/1 var(--f-display); padding: 11px 16px; width: 100%;
 .journal { display: grid; gap: 22px; max-width: 680px; }
 .page { border: 1px solid var(--ink-faint); padding: 18px 20px; display: grid; gap: 10px; background: var(--paper); }
 .page h3 { font: 400 22px/1.1 var(--f-display); margin: 0; }
-.page p { margin: 0; font: 400 19px/1.45 var(--f-hand); color: var(--ink); }
+.page p { margin: 0; font: 400 22px/1.45 var(--f-hand); color: var(--ink); }
 .page p.sig { color: var(--red); text-align: right; }
 
-.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; font-weight: 600; max-width: calc(100% - 32px); z-index: 5; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) rotate(-0.8deg); width: min(440px, calc(100% - 32px)); z-index: 5;
+  background: var(--slip); color: var(--ink); border: 1px solid var(--ink-faint); box-shadow: 0 2px 0 var(--ink-faint), 0 8px 18px rgba(0, 0, 0, 0.18); padding: 8px 14px 10px; }
+.toast .tg-h { display: flex; justify-content: space-between; font: 400 10px/1.2 var(--f-num); letter-spacing: 0.16em; color: var(--red); border-bottom: 1px solid var(--red); padding-bottom: 4px; margin-bottom: 6px; }
+.toast .tg-b { font: 400 13px/1.45 var(--f-num); letter-spacing: 0.05em; text-transform: uppercase; }
 footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; color: var(--ink-dim); font-size: 14px; border-top: 3px double var(--ink); padding-top: 10px; }
 .confirm, .themes { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .themes button { min-height: 30px; padding: 4px 10px; font-size: 13px; }
 .themes button[aria-pressed="true"], .themes button[aria-pressed="true"]:hover:not(:disabled) { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+/* Each drawing keeps its own kind of paperwork. */
+/* Sheet 1, the bench ledger: the master's pencil in the margins. */
+#viewClock section > h2 small { font: 400 19px/1 var(--f-hand); color: var(--red); }
+/* Sheet 2, a printed bell schedule card. */
+#viewTower section > h2 { flex-direction: column; align-items: center; text-align: center; gap: 3px; border-bottom: 0; border-top: 3px double var(--ink); padding-top: 8px; font: 700 15px/1.1 var(--f-body); letter-spacing: 0.22em; text-transform: uppercase; }
+#viewTower section > h2 small { font: italic 400 13px var(--f-body); letter-spacing: 0.02em; text-transform: none; text-align: center; }
+#viewTower .panel { border: 1px solid var(--ink); outline: 1px solid var(--ink); outline-offset: -5px; padding: 14px 16px; }
+#viewTower .case { outline: 1px solid var(--ink); outline-offset: -5px; }
+/* Sheet 3, a telegraph office ledger: inked header bars and a red margin rule. */
+#viewCity section > h2 { background: var(--ink); color: var(--paper); border: 0; padding: 7px 10px; font: 400 14px/1 var(--f-num); letter-spacing: 0.14em; text-transform: uppercase; }
+#viewCity section > h2 small { color: inherit; opacity: 0.75; font: 400 12px var(--f-num); letter-spacing: 0.06em; }
+#viewCity .panel { border: 1px solid var(--ink); border-top: 0; padding: 6px 10px 10px 44px; box-shadow: inset 36px 0 0 -35px var(--red); }
+#viewCity .case { border-top: 0; }
+/* Sheet 4, an astronomical almanac: numbered sections between fine rules. */
+#viewOrrery { counter-reset: almanac; }
+#viewOrrery section > h2 { counter-increment: almanac; justify-content: flex-start; border-bottom: 1px solid var(--ink-faint); border-top: 3px double var(--ink); padding: 7px 0 5px; font: italic 400 22px/1 var(--f-body); }
+#viewOrrery section > h2::before { content: counter(almanac, upper-roman) "."; font-style: normal; color: var(--red); margin-right: 4px; }
+#viewOrrery section > h2 small { margin-left: auto; font: 400 12px var(--f-num); letter-spacing: 0.08em; text-transform: uppercase; font-style: normal; }
+/* Sheet 5, engraved brass plates screwed to the old clock's frame. */
+#viewGreat section > h2 { background: var(--brass); color: var(--on-brass); border: 1px solid var(--ink); box-shadow: inset 0 0 0 3px var(--brass), inset 0 0 0 4px var(--on-brass); padding: 10px 14px; font: 700 14px/1 var(--f-body); letter-spacing: 0.2em; text-transform: uppercase; }
+#viewGreat section > h2 small { color: var(--on-brass); opacity: 0.8; font: italic 400 13px var(--f-body); letter-spacing: 0.02em; text-transform: none; }
+#viewGreat .ending h2 { background: none; box-shadow: none; border: 0; color: var(--ink); }
+/* column heads over the ledgers */
+.thead { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; font: 400 10.5px var(--f-num); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); border-bottom: 1px solid var(--ink); padding-bottom: 3px; }
 @media (prefers-reduced-motion: reduce) { .stage { transition: none; } .panel.fresh { animation: none; } }
 </style>
 </head>
@@ -197,10 +229,10 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
 
     <div class="cols">
       <section>
-        <h2>Gears <small>each gear turns the one before it</small></h2>
+        <h2>Gears <small>the Fusee drives them all</small></h2>
         <div class="panel" id="gears"></div>
         <div class="row">
-          <p class="hint">Every 10 of a gear sets a jewel bearing, which doubles its speed. Press <b>M</b> to buy all you can.</p>
+          <p class="hint">Ten of one gear sets a jewel bearing and doubles that gear. The <b>M</b> key spends everything you can.</p>
           <button class="ghost" id="buyAll">Buy all</button>
         </div>
       </section>
@@ -233,7 +265,7 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
           <h2>Workbench <small id="chimesLbl"></small></h2>
           <div class="panel">
             <div class="bench" id="bench"></div>
-            <p class="hint">Each finished clock adds +1× to every gear. Each one is larger than the last.</p>
+            <p class="hint">A clock on the bench lends +1× to every gear you build. Expect the next to be bigger.</p>
             <div id="benchShop"></div>
           </div>
         </section>
@@ -263,7 +295,7 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
       <section>
         <h2>Turret wheels <small>bought with chimes</small></h2>
         <div class="panel" id="towerWheels"></div>
-        <p class="hint">The arbor makes <b>hours</b>. Every wheel turns the one before it, the same as in your clocks. Every finished clock makes the tower turn 10% faster.</p>
+        <p class="hint">The pendulum arbor counts the <b>hours</b>; the heavier wheels behind it keep it going. Each clock on your bench adds a tenth to the tower’s pace.</p>
       </section>
 
       <div class="col">
@@ -278,7 +310,7 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
         <section id="strikeBox">
           <h2>Strike the hour <small id="strikeLbl"></small></h2>
           <div class="panel">
-            <p class="hint">At <b id="strikeAtLbl">1e9 hours</b> the great bell can strike for the first time, and the town will hear your clock.</p>
+            <p class="hint">Once the tower has kept <b id="strikeAtLbl">1e9 hours</b>, the great bell may strike. The whole town will hear it.</p>
             <div class="meter"><div id="strikeMeter"></div></div>
             <button class="big" id="strikeBtn">Strike the hour</button>
           </div>
@@ -308,8 +340,8 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
     <div class="cols">
       <section>
         <h2>Districts <small>wired with accord</small></h2>
-        <div class="panel" id="districts"></div>
-        <p class="hint">The Market's dials make <b>accord</b>. Every district's dials turn the one before it, the same as your gears. More hours on the tower make every district faster.</p>
+        <div class="panel"><div class="thead"><span>No.</span><span>District · dials wired · pace</span><span>Wire dials</span></div><div id="districts"></div></div>
+        <p class="hint">Accord is made in the Market. Each district further out feeds the one nearer in, and the hours your tower has kept quicken them all.</p>
       </section>
 
       <div class="col">
@@ -355,8 +387,8 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
     <div class="cols">
       <section>
         <h2>Planet arms <small>geared in years</small></h2>
-        <div class="panel" id="arms"></div>
-        <p class="hint">Earth's arm makes <b>years</b>. Every arm turns the one before it, as everywhere else. A more agreeable city makes every arm faster, and years make every district in the city faster in return.</p>
+        <div class="panel"><div class="thead"><span>No.</span><span>Arm · turning · pace</span><span>Set</span></div><div id="arms"></div></div>
+        <p class="hint">Earth’s turns are the <b>years</b>. Outer arms drive inner ones. The city’s accord quickens all six, and years repay the favour to the city.</p>
       </section>
 
       <div class="col">
@@ -410,7 +442,7 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
       <section>
         <h2>The old clock's wheels <small>turning in seconds</small></h2>
         <div class="panel" id="greatWheels"></div>
-        <p class="hint">The Seconds Wheel wins back <b>seconds</b> the world has lost. Every wheel turns the one before it, as everywhere else. More years on the orrery make every wheel faster.</p>
+        <p class="hint">Lost <b>seconds</b> come back through the Seconds Wheel. The Minute, Hour and Year wheels stand behind it, and the orrery’s years quicken all four.</p>
       </section>
 
       <div class="col">
@@ -664,7 +696,7 @@ function drawMachine(dt) {
   }
   if (S.gears[0].amount > 0) drawAnchor(cx, TRAIN, beat % 2 ? 1 : -1, Math.min(1, frac * 5));
   cx.setTransform(1, 0, 0, 1, 0, 0);
-  cx.font = '13px "Courier Prime", "Courier New", monospace'; cx.textAlign = 'center';
+  cx.font = '13px "Cutive Mono", "Courier New", monospace'; cx.textAlign = 'center';
   for (let i = 0; i < 8; i++) {
     const g = S.gears[i];
     if (g.amount > 0 || i === 0 || S.gears[i - 1].amount > 0) labelGear(cx, TRAIN, i, `${i + 1} · ${TRAIN.g[i].n}T`);
@@ -746,7 +778,7 @@ function drawTower(dt) {
   tx.beginPath(); tx.moveTo(X - 14, base); tx.lineTo(X - 14, base - 34); tx.arc(X, base - 34, 14, Math.PI, 0); tx.lineTo(X + 14, base); tx.stroke();
   // leader from the face to the movement drawing
   tx.save(); tx.setLineDash([3, 4]); tx.strokeStyle = COL.dim; tx.beginPath(); tx.moveTo(X + fr + 4, fy); tx.lineTo(TTRAIN.ox + (TTRAIN.g[0].x - TTRAIN.g[0].r) * TTRAIN.k - 12, TTRAIN.oy + TTRAIN.g[0].y * TTRAIN.k); tx.stroke(); tx.restore();
-  tx.font = '12px "Courier Prime", "Courier New", monospace'; tx.fillStyle = COL.dim; tx.textAlign = 'center';
+  tx.font = '12px "Cutive Mono", "Courier New", monospace'; tx.fillStyle = COL.dim; tx.textAlign = 'center';
   tx.fillText('ELEVATION', X, base + 18);
   tx.fillText('MOVEMENT', TTRAIN.ox + ((TTRAIN.g[0].x + TTRAIN.g[3].x) / 2) * TTRAIN.k, 30);
   // the movement: four turret wheels in mesh
@@ -759,7 +791,7 @@ function drawTower(dt) {
     drawGear(tx, TTRAIN, TTRAIN.g[i], ang[i], built ? 'built' : 'planned', tflash[i] > 0);
   }
   tx.setTransform(1, 0, 0, 1, 0, 0);
-  tx.font = '13px "Courier Prime", "Courier New", monospace';
+  tx.font = '13px "Cutive Mono", "Courier New", monospace';
   for (let i = 0; i < 4; i++) if (w[i].amount > 0 || i === 0 || w[i - 1].amount > 0) labelGear(tx, TTRAIN, i, `${i + 1} · ${TTRAIN.g[i].n}T`);
 }
 
@@ -792,7 +824,7 @@ function drawCity() {
   x.fillStyle = COL.paper; x.strokeStyle = COL.ink; x.lineWidth = 2;
   x.fillRect(TOWER_XY.x - 14, TOWER_XY.y - 14, 28, 28); x.strokeRect(TOWER_XY.x - 14, TOWER_XY.y - 14, 28, 28);
   x.beginPath(); x.moveTo(TOWER_XY.x - 14, TOWER_XY.y - 14); x.lineTo(TOWER_XY.x + 14, TOWER_XY.y + 14); x.moveTo(TOWER_XY.x + 14, TOWER_XY.y - 14); x.lineTo(TOWER_XY.x - 14, TOWER_XY.y + 14); x.stroke();
-  x.font = '12px "Courier Prime", "Courier New", monospace'; x.textAlign = 'center';
+  x.font = '12px "Cutive Mono", "Courier New", monospace'; x.textAlign = 'center';
   x.fillStyle = COL.ink; x.fillText('TOWER', TOWER_XY.x, TOWER_XY.y + 32);
   // district dials: the minute hand shows how far each has drifted from the tower
   const t = (S.tower.hours % 1) * Math.PI * 2;
@@ -835,7 +867,7 @@ function drawOrrery() {
     x.beginPath(); x.arc(cxo, cyo, r, 0, Math.PI * 2); x.stroke(); x.restore();
   });
   // arms and planets
-  x.font = '11px "Courier Prime", "Courier New", monospace'; x.textAlign = 'left'; x.textBaseline = 'middle';
+  x.font = '11px "Cutive Mono", "Courier New", monospace'; x.textAlign = 'left'; x.textBaseline = 'middle';
   ORB_R.forEach((r, i) => {
     if (!a[i].bought) return;
     const ang = armAngle(S, i) - Math.PI / 2, px = cxo + Math.cos(ang) * r, py = cyo + Math.sin(ang) * r;
@@ -869,7 +901,7 @@ function drawGreat(dt) {
   x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, H);
   x.setTransform(1, 0, 0, 1, 0, 0);
   drawGear(x, GREAT_T, GW, greatAngle, 'built', S.finished);
-  x.font = '12px "Courier Prime", "Courier New", monospace'; x.textAlign = 'center';
+  x.font = '12px "Cutive Mono", "Courier New", monospace'; x.textAlign = 'center';
   x.fillStyle = COL.dim; x.fillText('THE OLD CLOCK · GREAT WHEEL, 144 TEETH', GW.x, GW.y - GW.r + 70);
   DRIVES.forEach((d, k) => {
     const dist = GW.r + d.r + (m[k] ? 0 : 22);
@@ -941,7 +973,7 @@ function drawCase(id, box, dt) {
     x.closePath(); x.fillStyle = st.solved ? COL.wash : COL.paper; x.fill(); x.strokeStyle = COL.ink; x.lineWidth = 1.3; x.stroke();
     x.beginPath(); x.arc(0, 0, R - 10, 0, Math.PI * 2); x.lineWidth = 1; x.stroke();
     // labels: the label under the pointer is the current setting
-    x.font = `${Math.round(R * 0.19)}px "Courier Prime", "Courier New", monospace`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `${Math.round(R * 0.19)}px "Cutive Mono", "Courier New", monospace`; x.textAlign = 'center'; x.textBaseline = 'middle';
     for (let k = 0; k < 12; k++) {
       const a = (k - A[i]) * Math.PI / 6 - Math.PI / 2;
       const isCur = k === st.pos[i];
@@ -1048,7 +1080,7 @@ function drawTrainCase(box, dt) {
     x.restore();
   });
   // labels
-  x.font = '12px "Courier Prime", "Courier New", monospace'; x.textAlign = 'center'; x.fillStyle = COL.red;
+  x.font = '12px "Cutive Mono", "Courier New", monospace'; x.textAlign = 'center'; x.fillStyle = COL.red;
   const C = BELL_TRAIN.fixed[0], B = BELL_TRAIN.fixed[1];
   x.fillText('CRANK ↻', G.X(C.x), G.Y(C.y) + (C.n + 6) * k + 10);
   x.fillText(ev.driven ? (ev.bellDir === -1 ? 'BELL ↺' : 'BELL ↻') : 'BELL', G.X(B.x), G.Y(B.y) + (B.n + 6) * k + 10);
@@ -1113,7 +1145,7 @@ function drawCountCase(box) {
   x.closePath(); x.fillStyle = st.solved ? COL.wash : COL.paper; x.fill(); x.strokeStyle = COL.ink; x.lineWidth = 1.6; x.stroke();
   x.beginPath(); x.arc(0, 0, 40, 0, Math.PI * 2); x.lineWidth = 1; x.stroke();
   x.beginPath(); x.arc(0, 0, 6, 0, Math.PI * 2); x.fillStyle = COL.ink; x.fill();
-  x.font = '13px "Courier Prime", "Courier New", monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = '13px "Cutive Mono", "Courier New", monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
   for (let i = 0; i < 12; i++) {
     const a = i * Math.PI / 6 - Math.PI / 2;
     x.fillStyle = st.notches[i] ? COL.red : COL.dim;
@@ -1202,7 +1234,7 @@ function drawRatioCase(box, dt) {
     }
     x.restore();
   });
-  x.font = '12px "Courier Prime", "Courier New", monospace'; x.textAlign = 'center'; x.fillStyle = COL.red;
+  x.font = '12px "Cutive Mono", "Courier New", monospace'; x.textAlign = 'center'; x.fillStyle = COL.red;
   x.fillText('EARTH', pos[0].x, top - r(sl[0]) - 10);
   x.fillText('MOON', pos[3].x, bot + r(sl[3]) + 18);
   x.fillStyle = COL.dim; x.textAlign = 'left'; x.fillText('SHARED', ax + 8, 148); x.fillText('ARBOR', ax + 8, 162);
@@ -1257,7 +1289,7 @@ function drawHandsCase(box) {
   x.beginPath(); x.arc(0, 0, 130, 0, Math.PI * 2); x.fillStyle = st.solved ? COL.wash : COL.paper; x.fill(); x.strokeStyle = COL.ink; x.lineWidth = 2; x.stroke();
   x.beginPath(); x.arc(0, 0, 122, 0, Math.PI * 2); x.lineWidth = 0.8; x.stroke();
   for (let k = 0; k < 60; k++) { const a = k * Math.PI / 30, r0 = k % 5 ? 116 : 110; x.beginPath(); x.moveTo(Math.sin(a) * r0, -Math.cos(a) * r0); x.lineTo(Math.sin(a) * 122, -Math.cos(a) * 122); x.lineWidth = k % 5 ? 0.6 : 1.4; x.stroke(); }
-  x.font = '17px "IM Fell English SC", Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = COL.ink;
+  x.font = '18px "Libre Caslon Display", Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = COL.ink;
   ROMAN.forEach((r, k) => { const a = (k + 1) * Math.PI / 6; x.fillText(r, Math.sin(a) * 92, -Math.cos(a) * 92); });
   const hand = (mark, len, w, col) => {
     const a = mark * Math.PI / 6;
@@ -1439,12 +1471,12 @@ function refreshCity() {
   const syncPct = Math.round(sync(S) * 100);
   setText($('syncLbl'), `${syncPct}% in step`);
   setWidth($('syncMeter'), syncPct);
-  setHTML($('syncHint'), S.relay ? 'The relay keeps every dial in step.' : `Wired dials drift, and drifting dials make less accord. The city is <b>${syncPct}%</b> in step.`);
+  setHTML($('syncHint'), S.relay ? 'The relay keeps every dial in step.' : `Wired dials wander off the true time and make less accord as they go. <b>${syncPct}%</b> are in step.`);
   setDis($('signalBtn'), !S.city.districts[0].amount || S.city.drift < 0.01);
   const ck = [S.relay, S.ringer, S.city.accord >= relayCost, S.city.accord >= ringerCost].join('|');
   if (ck !== lastCityKey) { lastCityKey = ck; renderCityShop(); }
   setText($('goalLbl'), cityDone(S) ? 'in step' : `${fmt(S.city.accord)} / ${fmt(TUNE.cityGoal)}`);
-  setHTML($('goalHint'), `At <b>${fmt(TUNE.cityGoal)} accord</b> every clock in the city keeps your time. Accord also makes the tower turn <b>×${fmt(accordMult(S))}</b> faster.`);
+  setHTML($('goalHint'), `<b>${fmt(TUNE.cityGoal)} accord</b> and every clock in the city keeps your time. Meanwhile the tower runs <b>×${fmt(accordMult(S))}</b> on it.`);
   setWidth($('goalMeter'), cityDone(S) ? 100 : Math.min(100, Math.log10(Math.max(1, S.city.accord)) / Math.log10(TUNE.cityGoal) * 100));
   if (cityDone(S)) reveal('case3Box');
   setText($('case3Lbl'), S.locks.case3?.solved ? 'opened' : 'in the observatory');
@@ -1472,7 +1504,7 @@ function refreshOrrery() {
   });
   const fresh = newInLine(S), lit = inLine(S), recs = S.orrery.records;
   setText($('conjLbl'), `${fmt(recs)} recorded`);
-  setHTML($('conjHint'), `When a planet crosses Earth's red line, observe it. Each one recorded makes Earth's arm faster: now <b>×${fmt(recordMult(S))}</b>. Two planets at once count four.`);
+  setHTML($('conjHint'), `Catch a planet on Earth’s red line and log it. The book quickens Earth’s arm, <b>×${fmt(recordMult(S))}</b> so far. A double counts four.`);
   setDis($('observeBtn'), !fresh.length);
   setText($('observeBtn'), fresh.length ? `Observe: ${fresh.map(i => ORRERY_NAMES[i]).join(' and ')} in line` : lit.length ? 'Recorded' : 'Observe the conjunction');
   const built = [1, 2, 3, 4, 5].filter(i => S.orrery.arms[i].bought);
@@ -1484,7 +1516,7 @@ function refreshOrrery() {
   const ok = [S.lamplighters, S.observer, S.orrery.years >= lamplightersCost, S.orrery.years >= observerCost].join('|');
   if (ok !== lastOrreryKey) { lastOrreryKey = ok; renderOrreryShop(); }
   setText($('orreryGoalLbl'), orreryDone(S) ? 'complete' : `${fmt(S.orrery.years)} / ${fmt(TUNE.orreryGoal)}`);
-  setHTML($('orreryGoalHint'), `At <b>${fmt(TUNE.orreryGoal)} years</b> the orrery is complete. Years also make every district in the city run <b>×${fmt(starMult(S))}</b> faster.`);
+  setHTML($('orreryGoalHint'), `The orrery is complete at <b>${fmt(TUNE.orreryGoal)} years</b>. Up in the city, the districts already run <b>×${fmt(starMult(S))}</b> on them.`);
   setWidth($('orreryGoalMeter'), orreryDone(S) ? 100 : Math.min(100, Math.log10(Math.max(1, S.orrery.years)) / Math.log10(TUNE.orreryGoal) * 100));
   if (orreryDone(S)) reveal('case4Box');
   setText($('case4Lbl'), S.locks.case4?.solved ? 'opened' : 'in the orrery\'s base');
@@ -1511,11 +1543,11 @@ function refreshGreat() {
   });
   const n = S.great.meshed.filter(Boolean).length;
   setText($('meshLbl'), `${n} of 4 meshed`);
-  setHTML($('meshHint'), `Each machine you mesh turns the Seconds Wheel faster by how far it has come. Together: <b>×${fmt(meshMult(S))}</b>.`);
+  setHTML($('meshHint'), `A machine meshed here lends the Seconds Wheel everything it has built. Together: <b>×${fmt(meshMult(S))}</b>.`);
   const gk = [S.great.meshed.join(), S.astronomer, ...MESH_COST.map(c => S.great.seconds >= c), S.great.seconds >= astronomerCost, Math.floor(Math.log10(meshMult(S)))].join('|');
   if (gk !== lastGreatKey) { lastGreatKey = gk; renderMeshShop(); }
   setText($('greatGoalLbl'), greatDone(S) ? 'won back' : `${fmt(S.great.seconds)} / ${fmt(TUNE.greatGoal)}`);
-  setHTML($('greatGoalHint'), `The world has lost about <b>${fmt(TUNE.greatGoal)} seconds</b> to the slowing. Win them back and the old clock runs by itself.`);
+  setHTML($('greatGoalHint'), `About <b>${fmt(TUNE.greatGoal)} seconds</b> have gone missing from the world. Bring them back and the old clock will run unaided.`);
   setWidth($('greatGoalMeter'), greatDone(S) ? 100 : Math.min(100, Math.log10(Math.max(1, S.great.seconds)) / Math.log10(TUNE.greatGoal) * 100));
   if (greatDone(S)) reveal('case5Box');
   setText($('case5Lbl'), S.locks.case5?.solved ? 'opened' : 'at the heart of the clock');
@@ -1580,8 +1612,8 @@ function refreshClock() {
   setTextP('tensionLbl', `${fmt(S.tension)} tension`);
   setWidth($('windMeter'), Math.min(100, Math.max(0, Math.log10(Math.max(1, S.runTicks)) / Math.log10(TUNE.windAt) * 100)));
   setHTMLP('windHint', wg > 0
-    ? `Winding resets your gears and ticks and gives <b>${fmt(wg)} tension</b>. Run longer for more.`
-    : `Reach <b>${fmt(TUNE.windAt)} ticks</b> in one run to wind the spring. Winding resets your gears for tension, which makes every gear faster.`);
+    ? `Wind now for <b>${fmt(wg)} tension</b>. Your gears and ticks start over; a longer run winds tighter.`
+    : `The spring takes a wind once a run reaches <b>${fmt(TUNE.windAt)} ticks</b>. You give up your gears, and the tension makes every gear quicker.`);
   setDis($('windBtn'), wg <= 0);
   setTextP('windBtn', wg > 0 ? `Wind the spring  +${fmt(wg)}` : 'Wind the spring');
 
@@ -1592,7 +1624,7 @@ function refreshClock() {
 
   if (S.runTicks >= 1e20 || S.clocks) reveal('chimeBox');
   const at = chimeAt(S);
-  setHTMLP('chimeHint', `Reach <b>${fmt(at)} ticks</b> to finish Clock No. ${S.clocks + 1}. It goes on the workbench and keeps running by itself. Your automatons come with you.`);
+  setHTMLP('chimeHint', `Clock No. ${S.clocks + 1} is done at <b>${fmt(at)} ticks</b>. It goes to the bench and runs on its own; the automatons follow you to the next.`);
   setWidth($('chimeMeter'), Math.min(100, Math.log10(Math.max(1, S.ticks)) / Math.log10(at) * 100));
   setDis($('chimeBtn'), !canChime(S));
   setTextP('chimeBtn', canChime(S) ? `Finish the clock  +${fmt(chimeGain(S))} chime${chimeGain(S) === 1 ? '' : 's'}` : 'Finish the clock');
@@ -1617,7 +1649,7 @@ function refreshTower() {
       vis ? `${fmt(w.amount)} turning · ×${fmt(towerMult(S, i))}` : `buy one ${TOWER_NAMES[i - 1]} first`, ' ch');
   });
   setTextP('hoursLbl', `${fmt(S.chimes)} chime${S.chimes === 1 ? '' : 's'}`);
-  setHTMLP('hoursHint', `The tower has kept <b>${fmt(S.tower.hours)} hours</b>, which makes every gear in your clocks run <b>×${fmt(hoursMult(S))}</b>.`);
+  setHTMLP('hoursHint', `<b>${fmt(S.tower.hours)} hours</b> kept so far. Down in your clocks, every gear feels it: <b>×${fmt(hoursMult(S))}</b>.`);
   const tk = [S.autoChime, S.governor, S.bells, S.chimes >= autoChimeCost, S.chimes >= governorCost, S.chimes >= bellCost(S)].join('|');
   if (tk !== lastTowerKey) { lastTowerKey = tk; renderTowerShop(); }
   setWidth($('strikeMeter'), Math.min(100, Math.log10(Math.max(1, S.tower.hours)) / Math.log10(TUNE.strikeAt) * 100));
@@ -1631,7 +1663,14 @@ function refreshTower() {
 }
 
 let toastT;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+// Messages arrive as telegram slips: capitals, and STOP for every full stop.
+function toast(msg) {
+  const t = $('toast');
+  const body = msg.replace(/[.!?](\s+|$)/g, ' STOP ').replace(/[:;]\s*/g, ' ').trim();
+  t.innerHTML = '<div class="tg-h"><span>TELEGRAM</span><span>WORKSHOP · PRIORITY</span></div><div class="tg-b"></div>';
+  t.querySelector('.tg-b').textContent = body;
+  t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3600);
+}
 
 // ---------- views ----------
 function show(v) {
@@ -1737,6 +1776,7 @@ function frame(now) {
 function start(data) {
   S = (data && data.S) ? migrate(Object.assign(newGame(), sanitize(data.S))) : (load() || newGame());
   applyTheme(savedTheme());
+  document.fonts?.ready.then(() => { readColors(); document.querySelectorAll('canvas').forEach(c => { c._key = ''; }); });
   gearRows = buildRows($('gears'), GEAR_NAMES, i => { if (buyGear(S, i, false)) flash[i] = 1; }, i => { if (buySet(S, i)) flash[i] = 1; });
   towerRows = buildRows($('towerWheels'), TOWER_NAMES, i => { if (buyTower(S, i, false)) tflash[i] = 1; }, buyTowerSet);
   cityRows = buildRows($('districts'), CITY_NAMES, i => buyDistrict(S, i, false), i => { let n = 0; do { if (!buyDistrict(S, i, false)) break; n++; } while (S.city.districts[i].bought % 10 !== 0); });
