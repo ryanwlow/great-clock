@@ -4,9 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Great Clock</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Cutive+Mono&family=Pinyon+Script&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Layout: one sheet of drafting linen, c. 1905 (or the same sheet by gaslight).
    The inked drawing of the current layer sits on top with its title block; the
@@ -161,6 +159,12 @@ button.big:hover:not(:disabled) { background: var(--red); color: var(--paper); b
 .toast .tg-h { display: flex; justify-content: space-between; font: 400 10px/1.2 var(--f-num); letter-spacing: 0.16em; color: var(--red); border-bottom: 1px solid var(--red); padding-bottom: 4px; margin-bottom: 6px; }
 .toast .tg-b { font: 400 13px/1.45 var(--f-num); letter-spacing: 0.05em; text-transform: uppercase; }
 footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; color: var(--ink-dim); font-size: 14px; border-top: 3px double var(--ink); padding-top: 10px; }
+.savecode { flex-basis: 100%; order: 3; }
+.savecode summary { cursor: pointer; list-style: none; }
+.savecode summary::-webkit-details-marker { display: none; }
+.savecode[open] { display: grid; gap: 8px; }
+.savecode textarea { width: 100%; font: 400 12px/1.4 var(--f-num); background: var(--paper); color: var(--ink); border: 1px solid var(--ink); padding: 6px; resize: vertical; word-break: break-all; }
+.version { font: 400 11px var(--f-num); letter-spacing: 0.1em; }
 .confirm, .themes { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .themes button { min-height: 30px; padding: 4px 10px; font-size: 13px; }
 .themes button[aria-pressed="true"], .themes button[aria-pressed="true"]:hover:not(:disabled) { background: var(--ink); color: var(--paper); border-color: var(--ink); }
@@ -479,13 +483,19 @@ footer { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-b
   </div>
 
   <footer>
-    <span>Progress saves in this browser.</span>
+    <details class="savecode" id="saveCode">
+      <summary>Progress saves in this browser. <u>Save code</u></summary>
+      <p class="hint">Copy this code to move your workshop to another browser, or paste one here to load it.</p>
+      <textarea id="saveText" rows="3" spellcheck="false" aria-label="Save code"></textarea>
+      <span class="row"><button class="ghost" id="saveCopy">Copy code</button><button class="ghost" id="saveLoad">Load this code</button><span class="hint" id="saveMsg"></span></span>
+    </details>
     <span class="themes" role="group" aria-label="Drawing style">
       <span>Drawing:</span>
       <button class="ghost" data-theme-set="light">Linen</button>
       <button class="ghost" data-theme-set="dark">Lamplight</button>
       <button class="ghost" data-theme-set="system">Match device</button>
     </span>
+    <span class="version">v1.0</span>
     <span class="confirm" id="resetWrap"></span>
   </footer>
 </div>
@@ -1009,7 +1019,7 @@ function buildTrainCase(box) {
   const ctl = box.querySelector('.dials');
   PIN_NAMES.forEach((nm, i) => {
     const el = document.createElement('div'); el.className = 'dial-ctl';
-    el.innerHTML = `<span>Pin ${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Smaller wheel on pin ${nm}">‹</button><button class="ghost" data-dir="1" aria-label="Larger wheel on pin ${nm}">›</button></span><span data-k="size">empty</span>`;
+    el.innerHTML = `<span>Pin ${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Smaller wheel on pin ${nm}">−</button><button class="ghost" data-dir="1" aria-label="Larger wheel on pin ${nm}">+</button></span><span data-k="size">empty</span>`;
     el.querySelectorAll('button').forEach(b => b.onclick = () => cyclePin(i, +b.dataset.dir));
     ctl.appendChild(el);
   });
@@ -1176,7 +1186,7 @@ function buildRatioCase(box) {
   const ctl = box.querySelector('.dials');
   RATIO_NAMES.forEach((nm, i) => {
     const el = document.createElement('div'); el.className = 'dial-ctl';
-    el.innerHTML = `<span>${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Smaller ${nm.toLowerCase()}">‹</button><button class="ghost" data-dir="1" aria-label="Larger ${nm.toLowerCase()}">›</button></span><span data-k="size">empty</span>`;
+    el.innerHTML = `<span>${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Smaller ${nm.toLowerCase()}">−</button><button class="ghost" data-dir="1" aria-label="Larger ${nm.toLowerCase()}">+</button></span><span data-k="size">empty</span>`;
     el.querySelectorAll('button').forEach(b => b.onclick = () => cycleRatio(i, +b.dataset.dir));
     ctl.appendChild(el);
   });
@@ -1269,7 +1279,7 @@ function buildHandsCase(box) {
   const ctl = box.querySelector('.dials');
   HAND_NAMES.forEach((nm, i) => {
     const el = document.createElement('div'); el.className = 'dial-ctl';
-    el.innerHTML = `<span>${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Turn the ${nm.toLowerCase()} back">‹</button><button class="ghost" data-dir="1" aria-label="Turn the ${nm.toLowerCase()} on">›</button></span><span data-k="at"></span>`;
+    el.innerHTML = `<span>${nm}</span><span class="btns"><button class="ghost" data-dir="-1" aria-label="Turn the ${nm.toLowerCase()} back">↺</button><button class="ghost" data-dir="1" aria-label="Turn the ${nm.toLowerCase()} on">↻</button></span><span data-k="at"></span>`;
     el.querySelectorAll('button').forEach(b => b.onclick = () => { if (handTurn(S, i, +b.dataset.dir)) { if (handsState(S).solved) onCaseOpened('case5'); refresh(); save(); } });
     ctl.appendChild(el);
   });
@@ -1705,7 +1715,7 @@ function catchUp(sec) {
   sec = Math.min(sec, 12 * 3600); if (sec < 2) return;
   const steps = Math.min(4000, Math.ceil(sec));
   for (let k = 0; k < steps; k++) tick(S, sec / steps);
-  toast(`While you were away the clock ran for ${Math.round(sec / 60)} min.`);
+  if (sec >= 60) toast(`While you were away the clock ran for ${Math.round(sec / 60)} min.`);
 }
 
 // ---------- actions ----------
@@ -1734,13 +1744,33 @@ function bindReset() {
     w.innerHTML = '<span>Erase all progress?</span> <button id="resetYes">Erase</button> <button class="ghost" id="resetNo">Keep</button>';
     $('resetYes').onclick = () => {
       S = newGame(); try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-      for (const k of ['windBox', 'shopBox', 'chimeBox', 'benchBox', 'case1Box', 'case2Box', 'case3Box', 'case4Box', 'case5Box', 'endBox']) $(k).hidden = true;
-      for (const k in lockAnim) delete lockAnim[k];
-      lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = lastOrreryKey = lastGreatKey = ''; lastJournalN = -1; bindReset(); show('clock');
+      resetUI();
     };
     $('resetNo').onclick = bindReset;
   };
 }
+function resetUI() {
+  for (const k of ['windBox', 'shopBox', 'chimeBox', 'benchBox', 'case1Box', 'case2Box', 'case3Box', 'case4Box', 'case5Box', 'endBox']) $(k).hidden = true;
+  for (const k in lockAnim) delete lockAnim[k];
+  lastShopKey = lastBenchKey = lastTowerKey = lastCityKey = lastOrreryKey = lastGreatKey = ''; lastJournalN = -1; bindReset(); show('clock');
+}
+// Save codes: the whole workshop as base64 text, for moving between browsers.
+const encodeSave = () => btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+$('saveCode').addEventListener('toggle', () => { if ($('saveCode').open) { save(); $('saveText').value = encodeSave(); $('saveMsg').textContent = ''; } });
+$('saveCopy').onclick = () => {
+  $('saveText').value = encodeSave(); $('saveText').select();
+  const done = () => { $('saveMsg').textContent = 'Copied.'; };
+  if (navigator.clipboard) navigator.clipboard.writeText($('saveText').value).then(done, () => { document.execCommand('copy'); done(); });
+  else { document.execCommand('copy'); done(); }
+};
+$('saveLoad').onclick = () => {
+  let data;
+  try { data = JSON.parse(decodeURIComponent(escape(atob($('saveText').value.trim())))); } catch (e) { data = null; }
+  if (!data || typeof data !== 'object' || !Array.isArray(data.gears)) { $('saveMsg').textContent = 'That code could not be read.'; return; }
+  S = migrate(Object.assign(newGame(), sanitize(data)));
+  save(); resetUI(); renderJournal();
+  $('saveMsg').textContent = 'Loaded.'; toast('Save code accepted. Your workshop is as you left it.');
+};
 
 // ---------- loop ----------
 let last = performance.now(), saveT = 0, faceT = 0, slowT = 0;
@@ -1786,7 +1816,12 @@ function start(data) {
   bindReset();
   if (S.savedAt && !(data && data.S)) catchUp((Date.now() - S.savedAt) / 1000);
   show(data && data.view ? data.view : 'clock');
-  addEventListener('visibilitychange', () => { if (document.hidden) save(); else last = performance.now(); });
+  // Browsers pause a hidden tab, so time spent in another tab is caught up on return.
+  let hiddenAt = 0;
+  addEventListener('visibilitychange', () => {
+    if (document.hidden) { hiddenAt = Date.now(); save(); }
+    else { if (hiddenAt) catchUp((Date.now() - hiddenAt) / 1000); hiddenAt = 0; last = performance.now(); refresh(); }
+  });
   requestAnimationFrame(t => { last = t; frame(t); });
 }
 window.claude?.hot?.snapshot?.(() => ({ S, view }));
